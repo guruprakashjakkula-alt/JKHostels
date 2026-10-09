@@ -21,6 +21,27 @@ with app.app_context():
         admin.set_password('Admin@123')
         db.session.add(admin)
         db.session.commit()
+        @app.route('/signup', methods=['GET', 'POST'])
+def signup():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        
+        # user already unnada check
+        existing = User.query.filter_by(username=username).first()
+        if existing:
+            flash('Username already exists!')
+            return redirect(url_for('signup'))
+        
+        new_user = User(username=username)
+        new_user.set_password(password)  # password hash avuthundi
+        db.session.add(new_user)
+        db.session.commit()
+        
+        flash('Account created! Please login')
+        return redirect(url_for('login'))
+        
+    return render_template('signup.html')
 
 # --- AUTH ROUTES ---
 @app.route('/', methods=['GET', 'POST'])
