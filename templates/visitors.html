@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Visitor Management</h1>
+        <p style="color: #6c757d; font-size: 0.9rem;">Log visitor check-ins, record exit times, and generate visitor security passes</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn btn-secondary" onclick="exportVisitorsCSV()">
+            <i class="fas fa-file-export"></i> Export CSV
+        </button>
+        <button class="btn btn-primary" onclick="openVisitorModal()">
+            <i class="fas fa-user-plus"></i> New Visitor Check-In
+        </button>
+    </div>
+</div>
+
+<!-- Visitor Statistics Summary -->
+<div class="stats-grid" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(244, 162, 97, 0.15); color: #F4A261;">
+            <i class="fas fa-building-user"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statCurrentlyInside">4</h3>
+            <p>Currently on Campus</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(42, 157, 143, 0.15); color: #2A9D8F;">
+            <i class="fas fa-id-badge"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statTodayTotal">18</h3>
+            <p>Total Visitors Today</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(28, 37, 65, 0.15); color: #1C2541;">
+            <i class="fas fa-clock-rotate-left"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statAvgDuration">48 min</h3>
+            <p>Avg Visit Duration</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(230, 57, 70, 0.15); color: #E63946;">
+            <i class="fas fa-user-shield"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statOverstay">0</h3>
+            <p>Overstay / Flags</p>
+        </div>
+    </div>
+</div>
+
+<!-- Controls & Visitor Log Table -->
+<div class="card">
+    <div class="table-controls" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <div style="position: relative; flex: 1; min-width: 260px;">
+            <input type="text" id="visitorSearch" placeholder="Search visitor, student name, phone, or pass #..." class="form-control" style="padding-left: 2.2rem;" onkeyup="filterVisitors()">
+            <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #888;"></i>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <select id="statusFilter" class="form-control" style="width: auto;" onchange="filterVisitors()">
+                <option value="">All Statuses</option>
+                <option value="Checked In">Checked In</option>
+                <option value="Checked Out">Checked Out</option>
+            </select>
+            <input type="date" id="dateFilter" class="form-control" style="width: auto;" value="2026-10-09" onchange="filterVisitors()">
+        </div>
+    </div>
+
+    <table class="data-table" id="visitorsTable">
+        <thead>
+            <tr>
+                <th>Pass #</th>
+                <th>Visitor Details</th>
+                <th>Host Student</th>
+                <th>Purpose / Relation</th>
+                <th>Entry Time</th>
+                <th>Exit Time</th>
+                <th>Status</th>
+                <th style="text-align: right;">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="visitorsTableBody">
+            <tr data-status="Checked In">
+                <td><strong>#VIS-401</strong></td>
+                <td>
+                    <strong>Rajesh Sharma</strong>
+                    <small style="display: block; color: #888;"><i class="fas fa-phone"></i> +91 98765 43210</small>
+                </td>
+                <td>Aarav Sharma <small style="display: block; color: #888;">Room 101</small></td>
+                <td>Father <small style="display: block; color: #888;">Family Visit</small></td>
+                <td>10:15 AM</td>
+                <td><span class="exit-time" style="color: #888;">--:--</span></td>
+                <td><span class="badge badge-primary status-badge">Checked In</span></td>
+                <td style="text-align: right;">
+                    <button class="btn btn-secondary checkout-btn" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 4px;" onclick="checkoutVisitor(this)">
+                        Check Out
+                    </button>
+                    <button class="btn-icon text-primary" title="Print Pass" onclick="printVisitorPass('VIS-401', 'Rajesh Sharma', '+91 98765 43210', 'Aarav Sharma', 'Room 101', 'Father', 'Aadhaar Card', '10:15 AM', '2026-10-09')">
+                        <i class="fas fa-id-card"></i>
+                    </button>
+                </td>
+            </tr>
+            <tr data-status="Checked In">
+                <td><strong>#VIS-402</strong></td>
+                <td>
+                    <strong>Sunita Patel</strong>
+                    <small style="display: block; color: #888;"><i class="fas fa-phone"></i> +91 91234 56780</small>
+                </td>
+                <td>Priya Patel <small style="display: block; color: #888;">Room 204</small></td>
+                <td>Mother <small style="display: block; color: #888;">Document Handover</small></td>
+                <td>11:00 AM</td>
+                <td><span class="exit-time" style="color: #888;">--:--</span></td>
+                <td><span class="badge badge-primary status-badge">Checked In</span></td>
+                <td style="text-align: right;">
+                    <button class="btn btn-secondary checkout-btn" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 4px;" onclick="checkoutVisitor(this)">
+                        Check Out
+                    </button>
+                    <button class="btn-icon text-primary" title="Print Pass" onclick="printVisitorPass('VIS-402', 'Sunita Patel', '+91 91234 56780', 'Priya Patel', 'Room 204', 'Mother', 'PAN Card', '11:00 AM', '2026-10-09')">
+                        <i class="fas fa-id-card"></i>
+                    </button>
+                </td>
+            </tr>
+            <tr data-status="Checked Out">
+                <td><strong>#VIS-400</strong></td>
+                <td>
+                    <strong>Vikram Desai</strong>
+                    <small style="display: block; color: #888;"><i class="fas fa-phone"></i> +91 99887 76655</small>
+                </td>
+                <td>Rohan Verma <small style="display: block; color: #888;">Room 102</small></td>
+                <td>Guardian <small style="display: block; color: #888;">Fee Clearance</small></td>
+                <td>09:00 AM</td>
+                <td><span class="exit-time">10:05 AM</span></td>
+                <td><span class="badge badge-success status-badge">Checked Out</span></td>
+                <td style="text-align: right;">
+                    <button class="btn-icon text-primary" title="Print Pass" onclick="printVisitorPass('VIS-400', 'Vikram Desai', '+91 99887 76655', 'Rohan Verma', 'Room 102', 'Guardian', 'Driving License', '09:00 AM', '2026-10-09')">
+                        <i class="fas fa-id-card"></i>
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal: New Visitor Check-In Form -->
+<div id="visitorModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1050; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+    <div style="background: #ffffff; border-radius: 8px; width: 100%; max-width: 650px; padding: 2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.25); max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.3rem; color: #0B132B;"><i class="fas fa-user-plus" style="color: #F4A261;"></i> New Visitor Check-In</h2>
+            <button onclick="closeVisitorModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #888;">&times;</button>
+        </div>
+
+        <form id="visitorForm" onsubmit="handleVisitorCheckIn(event)">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Visitor Full Name *</label>
+                    <input type="text" name="visitor_name" required class="form-control" placeholder="e.g. Ramesh Kumar">
+                </div>
+                <div class="form-group">
+                    <label>Phone Number *</label>
+                    <input type="tel" name="visitor_phone" required class="form-control" placeholder="10-digit mobile number">
+                </div>
+                <div class="form-group">
+                    <label>Host Student *</label>
+                    <select name="host_student" id="modalStudentSelect" class="form-control" required>
+                        <option value="">-- Select Student --</option>
+                        <option value="Aarav Sharma (Room 101)">Aarav Sharma (Room 101)</option>
+                        <option value="Priya Patel (Room 204)">Priya Patel (Room 204)</option>
+                        <option value="Rohan Verma (Room 102)">Rohan Verma (Room 102)</option>
+                        <option value="Ananya Iyer (Room 305)">Ananya Iyer (Room 305)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Relationship *</label>
+                    <input type="text" name="relationship" required class="form-control" placeholder="Parent, Sibling, Friend, Guardian">
+                </div>
+                <div class="form-group">
+                    <label>ID Proof Type *</label>
+                    <select name="id_proof_type" class="form-control" required>
+                        <option value="Aadhaar Card">Aadhaar Card</option>
+                        <option value="PAN Card">PAN Card</option>
+                        <option value="Driving License">Driving License</option>
+                        <option value="Passport">Passport</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>ID Proof Number</label>
+                    <input type="text" name="id_proof_number" class="form-control" placeholder="Last 4 digits or ID string">
+                </div>
+                <div class="form-group full-width">
+                    <label>Purpose of Visit *</label>
+                    <input type="text" name="purpose" required class="form-control" placeholder="Family visit, bringing luggage, fee clearance, etc.">
+                </div>
+                <div class="form-group full-width">
+                    <label>Security Notes / Belongings</label>
+                    <textarea name="notes" class="form-control" rows="2" placeholder="Vehicle number, belongings deposited at gate, etc."></textarea>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeVisitorModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Check In & Generate Pass</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Printable Visitor Pass (Hidden from standard view) -->
+<div id="visitorPassPrintArea" style="display: none;">
+    <div style="padding: 2rem; border: 2px solid #0B132B; max-width: 500px; margin: 0 auto; font-family: 'Segoe UI', Tahoma, sans-serif;">
+        <div style="text-align: center; border-bottom: 2px solid #0B132B; padding-bottom: 0.8rem; margin-bottom: 1rem;">
+            <h2 style="margin: 0; color: #0B132B; font-size: 1.4rem; letter-spacing: 1px;">LUXE HOSTEL MANAGEMENT</h2>
+            <p style="margin: 3px 0; color: #555; font-size: 0.85rem;">VISITOR ENTRY GATE PASS</p>
+        </div>
+
+        <table style="width: 100%; margin-bottom: 1rem; font-size: 0.9rem;">
+            <tr>
+                <td><strong>Pass No:</strong> <span id="vPassNo"></span></td>
+                <td style="text-align: right;"><strong>Date:</strong> <span id="vPassDate"></span></td>
+            </tr>
+            <tr>
+                <td><strong>Visitor:</strong> <span id="vPassName"></span></td>
+                <td style="text-align: right;"><strong>Phone:</strong> <span id="vPassPhone"></span></td>
+            </tr>
+            <tr>
+                <td><strong>Host Student:</strong> <span id="vPassStudent"></span></td>
+                <td style="text-align: right;"><strong>Room:</strong> <span id="vPassRoom"></span></td>
+            </tr>
+            <tr>
+                <td><strong>Relation:</strong> <span id="vPassRelation"></span></td>
+                <td style="text-align: right;"><strong>ID Verified:</strong> <span id="vPassId"></span></td>
+            </tr>
+            <tr>
+                <td><strong>Check-In Time:</strong> <span id="vPassTime"></span></td>
+                <td style="text-align: right;"><strong>Gate No:</strong> Main Gate 1</td>
+            </tr>
+        </table>
+
+        <div style="background: #f8f9fa; border: 1px dashed #999; padding: 0.6rem; margin-bottom: 1.5rem; font-size: 0.75rem; color: #555;">
+            * This pass must be carried at all times on hostel premises. Please surrender this pass to security at the gate during exit. Visiting hours end strictly at 08:00 PM.
+        </div>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 2rem; padding-top: 0.5rem;">
+            <div style="text-align: center; width: 140px;">
+                <hr style="border: 0; border-top: 1px solid #444; margin-bottom: 4px;">
+                <span style="font-size: 0.75rem;">Visitor Signature</span>
+            </div>
+            <div style="text-align: center; width: 140px;">
+                <hr style="border: 0; border-top: 1px solid #444; margin-bottom: 4px;">
+                <span style="font-size: 0.75rem;">Security Officer</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openVisitorModal() {
+        document.getElementById('visitorModal').style.display = 'flex';
+    }
+
+    function closeVisitorModal() {
+        document.getElementById('visitorModal').style.display = 'none';
+        document.getElementById('visitorForm').reset();
+    }
+
+    function handleVisitorCheckIn(e) {
+        e.preventDefault();
+        const form = e.target;
+        const passNo = 'VIS-' + Math.floor(400 + Math.random() * 500);
+        const name = form.visitor_name.value;
+        const phone = form.visitor_phone.value;
+        const studentInfo = form.host_student.value;
+        const relation = form.relationship.value;
+        const purpose = form.purpose.value;
+        const idType = form.id_proof_type.value;
+        
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const dateString = now.toISOString().split('T')[0];
+
+        const newRow = `
+            <tr data-status="Checked In">
+                <td><strong>#${passNo}</strong></td>
+                <td>
+                    <strong>${name}</strong>
+                    <small style="display: block; color: #888;"><i class="fas fa-phone"></i> ${phone}</small>
+                </td>
+                <td>${studentInfo}</td>
+                <td>${relation} <small style="display: block; color: #888;">${purpose}</small></td>
+                <td>${timeString}</td>
+                <td><span class="exit-time" style="color: #888;">--:--</span></td>
+                <td><span class="badge badge-primary status-badge">Checked In</span></td>
+                <td style="text-align: right;">
+                    <button class="btn btn-secondary checkout-btn" style="padding: 4px 10px; font-size: 0.8rem; margin-right: 4px;" onclick="checkoutVisitor(this)">
+                        Check Out
+                    </button>
+                    <button class="btn-icon text-primary" title="Print Pass" onclick="printVisitorPass('${passNo}', '${name}', '${phone}', '${studentInfo}', '', '${relation}', '${idType}', '${timeString}', '${dateString}')">
+                        <i class="fas fa-id-card"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+
+        document.getElementById('visitorsTableBody').insertAdjacentHTML('afterbegin', newRow);
+        updateVisitorStats();
+        closeVisitorModal();
+    }
+
+    function checkoutVisitor(btn) {
+        const row = btn.closest('tr');
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        row.setAttribute('data-status', 'Checked Out');
+        row.querySelector('.exit-time').innerText = timeString;
+        row.querySelector('.exit-time').style.color = 'inherit';
+
+        const badge = row.querySelector('.status-badge');
+        badge.className = 'badge badge-success status-badge';
+        badge.innerText = 'Checked Out';
+
+        btn.remove();
+        updateVisitorStats();
+    }
+
+    function updateVisitorStats() {
+        const insideCount = document.querySelectorAll('#visitorsTableBody tr[data-status="Checked In"]').length;
+        const totalToday = document.querySelectorAll('#visitorsTableBody tr').length;
+
+        document.getElementById('statCurrentlyInside').innerText = insideCount;
+        document.getElementById('statTodayTotal').innerText = totalToday;
+    }
+
+    function filterVisitors() {
+        const query = document.getElementById('visitorSearch').value.toLowerCase();
+        const status = document.getElementById('statusFilter').value;
+        const rows = document.querySelectorAll('#visitorsTableBody tr');
+
+        rows.forEach(row => {
+            const rowStatus = row.getAttribute('data-status') || '';
+            const text = row.innerText.toLowerCase();
+
+            const matchesSearch = !query || text.includes(query);
+            const matchesStatus = !status || rowStatus === status;
+
+            if (matchesSearch && matchesStatus) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function printVisitorPass(passNo, name, phone, student, room, relation, idType, time, date) {
+        document.getElementById('vPassNo').innerText = passNo;
+        document.getElementById('vPassName').innerText = name;
+        document.getElementById('vPassPhone').innerText = phone;
+        document.getElementById('vPassStudent').innerText = student;
+        document.getElementById('vPassRoom').innerText = room || 'Allotted Room';
+        document.getElementById('vPassRelation').innerText = relation;
+        document.getElementById('vPassId').innerText = idType;
+        document.getElementById('vPassTime').innerText = time;
+        document.getElementById('vPassDate').innerText = date;
+
+        const printContents = document.getElementById('visitorPassPrintArea').innerHTML;
+        const originalContents = document.body.innerHTML;
+
+        document.body.innerHTML = printContents;
+        window.print();
+        document.body.innerHTML = originalContents;
+        window.location.reload();
+    }
+
+    function exportVisitorsCSV() {
+        let csv = 'Pass No,Visitor Name,Phone,Host Student,Relation & Purpose,Entry Time,Exit Time,Status\n';
+        const rows = document.querySelectorAll('#visitorsTableBody tr');
+
+        rows.forEach(row => {
+            const cols = row.querySelectorAll('td');
+            const passNo = cols[0].innerText.trim();
+            const visitorName = cols[1].querySelector('strong').innerText.trim();
+            const phone = cols[1].querySelector('small').innerText.trim();
+            const hostStudent = cols[2].innerText.replace(/\n/g, ' ').trim();
+            const relation = cols[3].innerText.replace(/\n/g, ' ').trim();
+            const entryTime = cols[4].innerText.trim();
+            const exitTime = cols[5].innerText.trim();
+            const status = cols[6].innerText.trim();
+
+            csv += `"${passNo}","${visitorName}","${phone}","${hostStudent}","${relation}","${entryTime}","${exitTime}","${status}"\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'Hostel_Visitors_Register.csv');
+        a.click();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Mess & Dining Management</h1>
+        <p style="color: #6c757d; font-size: 0.9rem;">Manage weekly nutrition schedules, meal attendance, dietary preferences, and catering quality</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn btn-secondary" onclick="window.print()">
+            <i class="fas fa-print"></i> Print Weekly Menu
+        </button>
+        <button class="btn btn-primary" onclick="openMenuModal()">
+            <i class="fas fa-utensils"></i> Update Today's Menu
+        </button>
+    </div>
+</div>
+
+<!-- Mess Operational Metrics -->
+<div class="stats-grid" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(244, 162, 97, 0.15); color: #F4A261;">
+            <i class="fas fa-bowl-food"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statTodayMeals">284</h3>
+            <p>Meals Served Today</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(42, 157, 143, 0.15); color: #2A9D8F;">
+            <i class="fas fa-carrot"></i>
+        </div>
+        <div class="stat-info">
+            <h3>92</h3>
+            <p>Registered Veg Diners</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(28, 37, 65, 0.15); color: #1C2541;">
+            <i class="fas fa-drumstick-bite"></i>
+        </div>
+        <div class="stat-info">
+            <h3>44</h3>
+            <p>Special Diet / Non-Veg</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(230, 57, 70, 0.15); color: #E63946;">
+            <i class="fas fa-star-half-stroke"></i>
+        </div>
+        <div class="stat-info">
+            <h3>4.6 / 5</h3>
+            <p>Catering Rating</p>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Menu Cards (Today's Schedule) -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+    <div class="card" style="border-top: 4px solid #F4A261;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+            <h3 style="color: #0B132B; margin: 0;"><i class="fas fa-mug-saucer text-primary"></i> Breakfast</h3>
+            <span class="badge badge-primary">07:30 - 09:30 AM</span>
+        </div>
+        <p id="menuBreakfast" style="color: #555; line-height: 1.5; min-height: 48px;">
+            Masala Dosa, Sambar, Coconut Chutney, Boiled Eggs, Fresh Fruits, Tea & Filter Coffee
+        </p>
+    </div>
+    <div class="card" style="border-top: 4px solid #2A9D8F;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+            <h3 style="color: #0B132B; margin: 0;"><i class="fas fa-sun text-success"></i> Lunch</h3>
+            <span class="badge badge-success">12:30 - 02:30 PM</span>
+        </div>
+        <p id="menuLunch" style="color: #555; line-height: 1.5; min-height: 48px;">
+            Steamed Basmati Rice, Chapati, Dal Tadka, Paneer Butter Masala, Fresh Green Salad, Curd & Papad
+        </p>
+    </div>
+    <div class="card" style="border-top: 4px solid #1C2541;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+            <h3 style="color: #0B132B; margin: 0;"><i class="fas fa-moon" style="color: #1C2541;"></i> Dinner</h3>
+            <span class="badge" style="background: rgba(28, 37, 65, 0.15); color: #1C2541;">07:30 - 09:30 PM</span>
+        </div>
+        <p id="menuDinner" style="color: #555; line-height: 1.5; min-height: 48px;">
+            Phulka Roti, Jeera Rice, Mixed Vegetable Curry, Yellow Moong Dal, Gulab Jamun, Buttermilk
+        </p>
+    </div>
+</div>
+
+<!-- Weekly Schedule Timetable -->
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2>Weekly Master Menu Schedule</h2>
+    </div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Day</th>
+                <th>Breakfast</th>
+                <th>Lunch</th>
+                <th>Evening Snack</th>
+                <th>Dinner</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Monday</strong></td>
+                <td>Poha, Sprouts, Boiled Eggs, Tea</td>
+                <td>Roti, Rice, Rajma Curry, Aloo Gobi, Curd</td>
+                <td>Veg Cutlet & Tea</td>
+                <td>Roti, Dal Fry, Seasonal Subzi, Kheer</td>
+            </tr>
+            <tr>
+                <td><strong>Tuesday</strong></td>
+                <td>Idli, Vada, Sambar, Coconut Chutney</td>
+                <td>Roti, Veg Pulao, Dal Makhani, Boondi Raita</td>
+                <td>Samosa & Chai</td>
+                <td>Phulka, Mixed Dal, Bhindi Masala, Ice Cream</td>
+            </tr>
+            <tr>
+                <td><strong>Wednesday</strong></td>
+                <td>Aloo Paratha, Curd, Pickle, Tea</td>
+                <td>Roti, Jeera Rice, Chana Masala, Salad</td>
+                <td>Biscuits, Banana, Tea</td>
+                <td>Roti, Egg Curry / Paneer Do Pyaza, Rice</td>
+            </tr>
+            <tr>
+                <td><strong>Thursday</strong></td>
+                <td>Upma, Coconut Chutney, Boiled Eggs, Coffee</td>
+                <td>Roti, Rice, Sambhar, Kadhi Pakoda, Papad</td>
+                <td>Sweet Corn & Tea</td>
+                <td>Roti, Dal Tadka, Dum Aloo, Rice, Fruit Custard</td>
+            </tr>
+            <tr>
+                <td><strong>Friday</strong></td>
+                <td>Masala Dosa, Sambar, Chutney, Tea</td>
+                <td>Roti, Rice, Paneer Butter Masala, Dal, Curd</td>
+                <td>Bread Pakoda & Tea</td>
+                <td>Phulka, Jeera Rice, Moong Dal, Gulab Jamun</td>
+            </tr>
+            <tr>
+                <td><strong>Saturday</strong></td>
+                <td>Puri Bhaji, Halwa, Tea</td>
+                <td>Roti, Curd Rice, Veg Biryani, Mirchi Ka Salan</td>
+                <td>Sprouts Chaat & Coffee</td>
+                <td>Roti, Dal Palak, Aloo Shimla Mirch, Rice</td>
+            </tr>
+            <tr>
+                <td><strong>Sunday</strong></td>
+                <td>Chole Bhature, Sweet Lassi</td>
+                <td>Special Dum Biryani (Veg/Chicken), Raita</td>
+                <td>Cake Slice & Tea</td>
+                <td>Light Khichdi, Papad, Kadhi, Chutney</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal: Update Today's Menu -->
+<div id="menuModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1050; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+    <div style="background: #ffffff; border-radius: 8px; width: 100%; max-width: 600px; padding: 2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.25);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.3rem; color: #0B132B;"><i class="fas fa-utensils" style="color: #F4A261;"></i> Edit Today's Meal Plan</h2>
+            <button onclick="closeMenuModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #888;">&times;</button>
+        </div>
+
+        <form id="menuForm" onsubmit="handleMenuUpdate(event)">
+            <div class="form-group">
+                <label>Breakfast Menu Items *</label>
+                <textarea id="editBreakfast" class="form-control" rows="2" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Lunch Menu Items *</label>
+                <textarea id="editLunch" class="form-control" rows="2" required></textarea>
+            </div>
+            <div class="form-group">
+                <label>Dinner Menu Items *</label>
+                <textarea id="editDinner" class="form-control" rows="2" required></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeMenuModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Publish Daily Menu</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openMenuModal() {
+        document.getElementById('editBreakfast').value = document.getElementById('menuBreakfast').innerText.trim();
+        document.getElementById('editLunch').value = document.getElementById('menuLunch').innerText.trim();
+        document.getElementById('editDinner').value = document.getElementById('menuDinner').innerText.trim();
+        document.getElementById('menuModal').style.display = 'flex';
+    }
+
+    function closeMenuModal() {
+        document.getElementById('menuModal').style.display = 'none';
+    }
+
+    function handleMenuUpdate(e) {
+        e.preventDefault();
+        document.getElementById('menuBreakfast').innerText = document.getElementById('editBreakfast').value;
+        document.getElementById('menuLunch').innerText = document.getElementById('editLunch').value;
+        document.getElementById('menuDinner').innerText = document.getElementById('editDinner').value;
+        alert("Today's mess menu updated successfully!");
+        closeMenuModal();
+    }
+</script>
+{% endblock %}

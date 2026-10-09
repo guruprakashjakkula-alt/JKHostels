@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>Room Management</h1>
+    <a href="{{ url_for('room_add') }}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Room</a>
+</div>
+<div class="card">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Room No.</th>
+                <th>Type</th>
+                <th>Capacity</th>
+                <th>Rent</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for room in rooms %}
+            <tr>
+                <td>{{ room.room_number }}</td>
+                <td>{{ room.room_type }}</td>
+                <td>{{ room.capacity }}</td>
+                <td>₹{{ room.monthly_rent }}</td>
+                <td><span class="badge badge-primary">{{ room.status }}</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

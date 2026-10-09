@@ -1,0 +1,440 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Fees & Payment Management</h1>
+        <p style="color: #6c757d; font-size: 0.9rem;">Record fee collections, track pending balances, and issue invoices</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn btn-secondary" onclick="exportPaymentsCSV()">
+            <i class="fas fa-file-export"></i> Export CSV
+        </button>
+        <button class="btn btn-primary" onclick="openPaymentModal()">
+            <i class="fas fa-plus"></i> Record Payment
+        </button>
+    </div>
+</div>
+
+<!-- Financial Summary Cards -->
+<div class="stats-grid" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(42, 157, 143, 0.15); color: #2A9D8F;">
+            <i class="fas fa-hand-holding-dollar"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statTotalCollected">₹4,82,500</h3>
+            <p>Collected This Month</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(230, 57, 70, 0.15); color: #E63946;">
+            <i class="fas fa-clock-rotate-left"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statTotalPending">₹54,000</h3>
+            <p>Outstanding / Due</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(244, 162, 97, 0.15); color: #F4A261;">
+            <i class="fas fa-receipt"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statTxnCount">68</h3>
+            <p>Transactions Completed</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(28, 37, 65, 0.15); color: #1C2541;">
+            <i class="fas fa-money-bill-transfer"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statUpiRatio">74%</h3>
+            <p>UPI / Digital Share</p>
+        </div>
+    </div>
+</div>
+
+<!-- Filters & Table Panel -->
+<div class="card">
+    <div class="table-controls" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <div style="position: relative; flex: 1; min-width: 260px;">
+            <input type="text" id="paymentSearch" placeholder="Search by student, receipt, or invoice..." class="form-control" style="padding-left: 2.2rem;" onkeyup="filterPayments()">
+            <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #888;"></i>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <select id="methodFilter" class="form-control" style="width: auto;" onchange="filterPayments()">
+                <option value="">All Payment Modes</option>
+                <option value="UPI">UPI</option>
+                <option value="Cash">Cash</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Card">Card</option>
+            </select>
+            <select id="statusFilter" class="form-control" style="width: auto;" onchange="filterPayments()">
+                <option value="">All Statuses</option>
+                <option value="Paid">Paid</option>
+                <option value="Partially Paid">Partially Paid</option>
+                <option value="Pending">Pending</option>
+            </select>
+        </div>
+    </div>
+
+    <table class="data-table" id="paymentsTable">
+        <thead>
+            <tr>
+                <th>Receipt #</th>
+                <th>Student</th>
+                <th>Room</th>
+                <th>Fee Head</th>
+                <th>Amount</th>
+                <th>Payment Mode</th>
+                <th>Date</th>
+                <th>Status</th>
+                <th style="text-align: right;">Action</th>
+            </tr>
+        </thead>
+        <tbody id="paymentsTableBody">
+            <tr data-method="UPI" data-status="Paid">
+                <td><strong>#REC-8041</strong></td>
+                <td>Aarav Sharma <small style="display: block; color: #888;">STU-2026-01</small></td>
+                <td>Room 101</td>
+                <td>Monthly Rent + Mess</td>
+                <td><strong>₹9,500</strong></td>
+                <td><span style="font-weight: 600; color: #1C2541;"><i class="fas fa-mobile-screen"></i> UPI</span></td>
+                <td>2026-10-02</td>
+                <td><span class="badge badge-success">Paid</span></td>
+                <td style="text-align: right;">
+                    <button class="btn-icon text-primary" title="Print Receipt" onclick="generateReceipt('REC-8041', 'Aarav Sharma', 'STU-2026-01', 'Room 101', '9500', 'UPI', '2026-10-02', 'Paid', 'October 2026 Monthly Fees')">
+                        <i class="fas fa-print"></i>
+                    </button>
+                </td>
+            </tr>
+            <tr data-method="Cash" data-status="Paid">
+                <td><strong>#REC-8042</strong></td>
+                <td>Priya Patel <small style="display: block; color: #888;">STU-2026-02</small></td>
+                <td>Room 204</td>
+                <td>Security Deposit</td>
+                <td><strong>₹10,000</strong></td>
+                <td><span style="font-weight: 600; color: #1C2541;"><i class="fas fa-money-bill-wave"></i> Cash</span></td>
+                <td>2026-10-03</td>
+                <td><span class="badge badge-success">Paid</span></td>
+                <td style="text-align: right;">
+                    <button class="btn-icon text-primary" title="Print Receipt" onclick="generateReceipt('REC-8042', 'Priya Patel', 'STU-2026-02', 'Room 204', '10000', 'Cash', '2026-10-03', 'Paid', 'Admission Caution Deposit')">
+                        <i class="fas fa-print"></i>
+                    </button>
+                </td>
+            </tr>
+            <tr data-method="Bank Transfer" data-status="Partially Paid">
+                <td><strong>#REC-8043</strong></td>
+                <td>Rohan Verma <small style="display: block; color: #888;">STU-2026-03</small></td>
+                <td>Room 102</td>
+                <td>Monthly Rent</td>
+                <td><strong>₹4,000</strong></td>
+                <td><span style="font-weight: 600; color: #1C2541;"><i class="fas fa-building-columns"></i> Bank Transfer</span></td>
+                <td>2026-10-05</td>
+                <td><span class="badge badge-primary">Partially Paid</span></td>
+                <td style="text-align: right;">
+                    <button class="btn-icon text-primary" title="Print Receipt" onclick="generateReceipt('REC-8043', 'Rohan Verma', 'STU-2026-03', 'Room 102', '4000', 'Bank Transfer', '2026-10-05', 'Partially Paid', 'Partial rent payment, balance: ₹2,500')">
+                        <i class="fas fa-print"></i>
+                    </button>
+                </td>
+            </tr>
+            <tr data-method="UPI" data-status="Pending">
+                <td><strong>#INV-8044</strong></td>
+                <td>Ananya Iyer <small style="display: block; color: #888;">STU-2026-04</small></td>
+                <td>Room 305</td>
+                <td>Electricity & Utility</td>
+                <td><strong>₹1,200</strong></td>
+                <td><span style="font-weight: 600; color: #888;">Unpaid</span></td>
+                <td>2026-10-08</td>
+                <td><span class="badge" style="background: rgba(230,57,70,0.15); color: #E63946;">Pending</span></td>
+                <td style="text-align: right;">
+                    <button class="btn-icon text-primary" title="Print Invoice" onclick="generateReceipt('INV-8044', 'Ananya Iyer', 'STU-2026-04', 'Room 305', '1200', 'Pending', '2026-10-08', 'Pending', 'Electricity Bill Due')">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal: Record Payment Form -->
+<div id="paymentModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1050; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+    <div style="background: #ffffff; border-radius: 8px; width: 100%; max-width: 700px; padding: 2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.25); max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.3rem; color: #0B132B;"><i class="fas fa-cash-register" style="color: #F4A261;"></i> Record Fee Payment</h2>
+            <button onclick="closePaymentModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #888;">&times;</button>
+        </div>
+
+        <form id="paymentForm" onsubmit="handlePaymentSubmit(event)">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Select Student *</label>
+                    <select id="modalStudentSelect" class="form-control" required onchange="handleStudentSelect(this)">
+                        <option value="">-- Choose Student --</option>
+                        <option value="STU-2026-01" data-name="Aarav Sharma" data-room="Room 101" data-rent="6500">Aarav Sharma (Room 101)</option>
+                        <option value="STU-2026-02" data-name="Priya Patel" data-room="Room 204" data-rent="7500">Priya Patel (Room 204)</option>
+                        <option value="STU-2026-03" data-name="Rohan Verma" data-room="Room 102" data-rent="5500">Rohan Verma (Room 102)</option>
+                        <option value="STU-2026-04" data-name="Ananya Iyer" data-room="Room 305" data-rent="9000">Ananya Iyer (Room 305)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Payment Date *</label>
+                    <input type="date" id="modalPaymentDate" required class="form-control" value="2026-10-09">
+                </div>
+
+                <div class="form-group">
+                    <label>Base Rent (₹)</label>
+                    <input type="number" id="feeRent" class="form-control fee-calc" value="0" min="0" oninput="calculateTotal()">
+                </div>
+                <div class="form-group">
+                    <label>Mess Fee (₹)</label>
+                    <input type="number" id="feeMess" class="form-control fee-calc" value="3000" min="0" oninput="calculateTotal()">
+                </div>
+                <div class="form-group">
+                    <label>Electricity Charges (₹)</label>
+                    <input type="number" id="feeElectricity" class="form-control fee-calc" value="0" min="0" oninput="calculateTotal()">
+                </div>
+                <div class="form-group">
+                    <label>Water & Utility (₹)</label>
+                    <input type="number" id="feeWater" class="form-control fee-calc" value="0" min="0" oninput="calculateTotal()">
+                </div>
+                <div class="form-group">
+                    <label>Late Fine / Penalties (₹)</label>
+                    <input type="number" id="feeLate" class="form-control fee-calc" value="0" min="0" oninput="calculateTotal()">
+                </div>
+                <div class="form-group">
+                    <label>Concession / Discount (₹)</label>
+                    <input type="number" id="feeDiscount" class="form-control fee-calc" value="0" min="0" oninput="calculateTotal()">
+                </div>
+
+                <div class="form-group">
+                    <label>Payment Method *</label>
+                    <select id="modalPaymentMethod" class="form-control" required>
+                        <option value="UPI">UPI</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Bank Transfer">Bank Transfer</option>
+                        <option value="Card">Card</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Payment Status *</label>
+                    <select id="modalPaymentStatus" class="form-control" required>
+                        <option value="Paid">Fully Paid</option>
+                        <option value="Partially Paid">Partially Paid</option>
+                        <option value="Pending">Pending</option>
+                    </select>
+                </div>
+                <div class="form-group full-width" style="background: #f8f9fa; border: 1px solid #ddd; padding: 1rem; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-weight: 600; color: #1C2541; font-size: 1.1rem;">Total Payable Amount:</span>
+                    <span style="font-weight: 700; color: #2A9D8F; font-size: 1.4rem;" id="totalDisplay">₹3,000</span>
+                </div>
+                <div class="form-group full-width">
+                    <label>Notes / Transaction Reference</label>
+                    <input type="text" id="modalReference" class="form-control" placeholder="UPI Ref ID, Cheque number, or comments">
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem;">
+                <button type="button" class="btn btn-secondary" onclick="closePaymentModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save & Issue Receipt</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Hidden Receipt Container for Printing -->
+<div id="receiptPrintArea" style="display: none;">
+    <div style="padding: 2.5rem; border: 2px solid #333; max-width: 700px; margin: 0 auto; font-family: 'Segoe UI', Tahoma, sans-serif;">
+        <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+            <h1 style="margin: 0; font-size: 1.8rem; letter-spacing: 1px;">LUXE HOSTEL MANAGEMENT</h1>
+            <p style="margin: 5px 0; color: #555;">Official Fee Payment Receipt</p>
+        </div>
+
+        <table style="width: 100%; margin-bottom: 1.5rem; font-size: 0.95rem;">
+            <tr>
+                <td><strong>Receipt No:</strong> <span id="prRecNo"></span></td>
+                <td style="text-align: right;"><strong>Date:</strong> <span id="prDate"></span></td>
+            </tr>
+            <tr>
+                <td><strong>Student Name:</strong> <span id="prName"></span></td>
+                <td style="text-align: right;"><strong>Student ID:</strong> <span id="prStuId"></span></td>
+            </tr>
+            <tr>
+                <td><strong>Room / Bed:</strong> <span id="prRoom"></span></td>
+                <td style="text-align: right;"><strong>Payment Method:</strong> <span id="prMethod"></span></td>
+            </tr>
+        </table>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
+            <thead>
+                <tr style="background: #f0f0f0; border-top: 1px solid #333; border-bottom: 1px solid #333;">
+                    <th style="padding: 8px; text-align: left;">Description</th>
+                    <th style="padding: 8px; text-align: right;">Amount Paid</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #eee;" id="prDesc">Hostel Fees</td>
+                    <td style="padding: 8px; text-align: right; border-bottom: 1px solid #eee; font-weight: bold;" id="prAmount">₹0</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; font-weight: 600;">Payment Status</td>
+                    <td style="padding: 8px; text-align: right; font-weight: 600;" id="prStatus">Paid</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 3.5rem; padding-top: 1rem;">
+            <div style="text-align: center; width: 200px;">
+                <hr style="border: 0; border-top: 1px solid #444; margin-bottom: 5px;">
+                <span style="font-size: 0.85rem;">Student Signature</span>
+            </div>
+            <div style="text-align: center; width: 200px;">
+                <hr style="border: 0; border-top: 1px solid #444; margin-bottom: 5px;">
+                <span style="font-size: 0.85rem;">Authorized Cashier / Warden</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function openPaymentModal() {
+        document.getElementById('paymentModal').style.display = 'flex';
+    }
+
+    function closePaymentModal() {
+        document.getElementById('paymentModal').style.display = 'none';
+        document.getElementById('paymentForm').reset();
+        calculateTotal();
+    }
+
+    function handleStudentSelect(select) {
+        const option = select.options[select.selectedIndex];
+        const rent = option.getAttribute('data-rent') || 0;
+        document.getElementById('feeRent').value = rent;
+        calculateTotal();
+    }
+
+    function calculateTotal() {
+        const rent = parseFloat(document.getElementById('feeRent').value) || 0;
+        const mess = parseFloat(document.getElementById('feeMess').value) || 0;
+        const elec = parseFloat(document.getElementById('feeElectricity').value) || 0;
+        const water = parseFloat(document.getElementById('feeWater').value) || 0;
+        const late = parseFloat(document.getElementById('feeLate').value) || 0;
+        const discount = parseFloat(document.getElementById('feeDiscount').value) || 0;
+
+        const total = Math.max(0, (rent + mess + elec + water + late) - discount);
+        document.getElementById('totalDisplay').innerText = '₹' + total.toLocaleString('en-IN');
+        return total;
+    }
+
+    function handlePaymentSubmit(e) {
+        e.preventDefault();
+        const studentSelect = document.getElementById('modalStudentSelect');
+        const selectedOption = studentSelect.options[studentSelect.selectedIndex];
+        
+        const stuId = selectedOption.value;
+        const name = selectedOption.getAttribute('data-name');
+        const room = selectedOption.getAttribute('data-room');
+        const amount = calculateTotal();
+        const method = document.getElementById('modalPaymentMethod').value;
+        const status = document.getElementById('modalPaymentStatus').value;
+        const date = document.getElementById('modalPaymentDate').value;
+        const receiptNo = 'REC-' + Math.floor(1000 + Math.random() * 9000);
+        const badgeClass = status === 'Paid' ? 'badge-success' : (status === 'Pending' ? 'badge-danger' : 'badge-primary');
+
+        const newRow = `
+            <tr data-method="${method}" data-status="${status}">
+                <td><strong>#${receiptNo}</strong></td>
+                <td>${name} <small style="display: block; color: #888;">${stuId}</small></td>
+                <td>${room}</td>
+                <td>Hostel Maintenance & Rent</td>
+                <td><strong>₹${amount.toLocaleString('en-IN')}</strong></td>
+                <td><span style="font-weight: 600; color: #1C2541;">${method}</span></td>
+                <td>${date}</td>
+                <td><span class="badge ${badgeClass}">${status}</span></td>
+                <td style="text-align: right;">
+                    <button class="btn-icon text-primary" title="Print Receipt" onclick="generateReceipt('${receiptNo}', '${name}', '${stuId}', '${room}', '${amount}', '${method}', '${date}', '${status}', 'Hostel Accommodations & Facilities')">
+                        <i class="fas fa-print"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+
+        document.getElementById('paymentsTableBody').insertAdjacentHTML('afterbegin', newRow);
+        closePaymentModal();
+    }
+
+    function filterPayments() {
+        const query = document.getElementById('paymentSearch').value.toLowerCase();
+        const method = document.getElementById('methodFilter').value;
+        const status = document.getElementById('statusFilter').value;
+        const rows = document.querySelectorAll('#paymentsTableBody tr');
+
+        rows.forEach(row => {
+            const rowMethod = row.getAttribute('data-method') || '';
+            const rowStatus = row.getAttribute('data-status') || '';
+            const text = row.innerText.toLowerCase();
+
+            const matchesSearch = !query || text.includes(query);
+            const matchesMethod = !method || rowMethod === method;
+            const matchesStatus = !status || rowStatus === status;
+
+            if (matchesSearch && matchesMethod && matchesStatus) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function generateReceipt(recNo, name, stuId, room, amount, method, date, status, desc) {
+        document.getElementById('prRecNo').innerText = recNo;
+        document.getElementById('prName').innerText = name;
+        document.getElementById('prStuId').innerText = stuId;
+        document.getElementById('prRoom').innerText = room;
+        document.getElementById('prAmount').innerText = '₹' + Number(amount).toLocaleString('en-IN');
+        document.getElementById('prMethod').innerText = method;
+        document.getElementById('prDate').innerText = date;
+        document.getElementById('prStatus').innerText = status;
+        document.getElementById('prDesc').innerText = desc;
+
+        const printContents = document.getElementById('receiptPrintArea').innerHTML;
+        const originalContents = document.body.innerHTML;
+
+        document.body.innerHTML = printContents;
+        window.print();
+        document.body.innerHTML = originalContents;
+        window.location.reload();
+    }
+
+    function exportPaymentsCSV() {
+        let csv = 'Receipt No,Student Name,Student ID,Room,Amount,Payment Method,Date,Status\n';
+        const rows = document.querySelectorAll('#paymentsTableBody tr');
+
+        rows.forEach(row => {
+            const cols = row.querySelectorAll('td');
+            const rec = cols[0].innerText.trim();
+            const stuInfo = cols[1].innerText.trim().split('\n');
+            const name = stuInfo[0];
+            const stuId = stuInfo[1] || '';
+            const room = cols[2].innerText.trim();
+            const amount = cols[4].innerText.trim();
+            const method = cols[5].innerText.trim();
+            const date = cols[6].innerText.trim();
+            const status = cols[7].innerText.trim();
+
+            csv += `"${rec}","${name}","${stuId}","${room}","${amount}","${method}","${date}","${status}"\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'Hostel_Payments_Ledger.csv');
+        a.click();
+    }
+</script>
+{% endblock %}

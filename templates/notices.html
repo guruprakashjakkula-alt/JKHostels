@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Hostel Notice Board</h1>
+        <p style="color: #6c757d; font-size: 0.9rem;">Broadcast circulars, policy notifications, maintenance alerts, and mess timing updates</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn btn-primary" onclick="openNoticeModal()">
+            <i class="fas fa-bullhorn"></i> Publish New Notice
+        </button>
+    </div>
+</div>
+
+<!-- Notice Priority Filter Tabs -->
+<div class="table-controls" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+    <div style="position: relative; flex: 1; min-width: 260px;">
+        <input type="text" id="noticeSearch" placeholder="Search notices by title, keyword, or issuer..." class="form-control" style="padding-left: 2.2rem;" onkeyup="filterNotices()">
+        <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #888;"></i>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <select id="categoryFilter" class="form-control" onchange="filterNotices()">
+            <option value="">All Categories</option>
+            <option value="General">General Circular</option>
+            <option value="Maintenance">Maintenance Alert</option>
+            <option value="Mess">Mess & Dining</option>
+            <option value="Regulations">Rules & Security</option>
+        </select>
+        <select id="priorityFilter" class="form-control" onchange="filterNotices()">
+            <option value="">All Priorities</option>
+            <option value="Urgent">Urgent</option>
+            <option value="Important">Important</option>
+            <option value="Normal">Normal</option>
+        </select>
+    </div>
+</div>
+
+<!-- Grid of Active Bulletins -->
+<div id="noticeGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+    <!-- Notice Item 1 -->
+    <div class="card notice-card" data-category="Maintenance" data-priority="Urgent" style="border-left: 5px solid #E63946; margin-bottom: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem;">
+            <span class="badge" style="background: rgba(230, 57, 70, 0.15); color: #E63946;">Urgent</span>
+            <small style="color: #888;"><i class="fas fa-calendar-day"></i> Oct 09, 2026</small>
+        </div>
+        <h3 class="notice-title" style="color: #0B132B; margin-bottom: 0.5rem; font-size: 1.15rem;">Scheduled Water Tank Cleaning</h3>
+        <p class="notice-body" style="color: #555; font-size: 0.9rem; line-height: 1.5; margin-bottom: 1rem;">
+            Overhead water tanks across Block A & B will be chlorinated and disinfected this Saturday from 10:00 AM to 02:00 PM. Please store required water in advance.
+        </p>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 0.8rem; font-size: 0.8rem; color: #777;">
+            <span><i class="fas fa-user-shield"></i> Warden Office</span>
+            <span>Expires: Oct 12, 2026</span>
+        </div>
+    </div>
+
+    <!-- Notice Item 2 -->
+    <div class="card notice-card" data-category="Regulations" data-priority="Important" style="border-left: 5px solid #F4A261; margin-bottom: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem;">
+            <span class="badge badge-primary">Important</span>
+            <small style="color: #888;"><i class="fas fa-calendar-day"></i> Oct 07, 2026</small>
+        </div>
+        <h3 class="notice-title" style="color: #0B132B; margin-bottom: 0.5rem; font-size: 1.15rem;">Curfew & In-Time Revision</h3>
+        <p class="notice-body" style="color: #555; font-size: 0.9rem; line-height: 1.5; margin-bottom: 1rem;">
+            Due to semester examination preparation, the hostel main gate closing deadline is revised to 10:30 PM. Late entries require parental consent submitted through the student portal.
+        </p>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 0.8rem; font-size: 0.8rem; color: #777;">
+            <span><i class="fas fa-building-columns"></i> Administration</span>
+            <span>Permanent</span>
+        </div>
+    </div>
+
+    <!-- Notice Item 3 -->
+    <div class="card notice-card" data-category="Mess" data-priority="Normal" style="border-left: 5px solid #2A9D8F; margin-bottom: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem;">
+            <span class="badge badge-success">Normal</span>
+            <small style="color: #888;"><i class="fas fa-calendar-day"></i> Oct 05, 2026</small>
+        </div>
+        <h3 class="notice-title" style="color: #0B132B; margin-bottom: 0.5rem; font-size: 1.15rem;">Sunday Special Feast Menu</h3>
+        <p class="notice-body" style="color: #555; font-size: 0.9rem; line-height: 1.5; margin-bottom: 1rem;">
+            The student mess council has selected Hyderabadi Dum Biryani and Gulab Jamun for this coming Sunday's communal lunch. Please confirm vegetarian preferences with the kitchen staff.
+        </p>
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 0.8rem; font-size: 0.8rem; color: #777;">
+            <span><i class="fas fa-utensils"></i> Mess Committee</span>
+            <span>Expires: Oct 11, 2026</span>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Publish Notice -->
+<div id="noticeModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1050; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+    <div style="background: #ffffff; border-radius: 8px; width: 100%; max-width: 600px; padding: 2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.25);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.3rem; color: #0B132B;"><i class="fas fa-bullhorn" style="color: #F4A261;"></i> Publish New Circular</h2>
+            <button onclick="closeNoticeModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #888;">&times;</button>
+        </div>
+
+        <form id="noticeForm" onsubmit="handleNoticeSubmit(event)">
+            <div class="form-group">
+                <label>Notice Subject / Title *</label>
+                <input type="text" name="title" class="form-control" placeholder="e.g. Wi-Fi Router Upgrade" required>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Category *</label>
+                    <select name="category" class="form-control" required>
+                        <option value="General">General</option>
+                        <option value="Maintenance">Maintenance</option>
+                        <option value="Mess">Mess & Dining</option>
+                        <option value="Regulations">Regulations</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Priority Level *</label>
+                    <select name="priority" class="form-control" required>
+                        <option value="Normal">Normal</option>
+                        <option value="Important">Important</option>
+                        <option value="Urgent">Urgent</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Publish Date</label>
+                    <input type="date" name="publish_date" class="form-control" value="2026-10-09" required>
+                </div>
+                <div class="form-group">
+                    <label>Expiration Date</label>
+                    <input type="date" name="expiry_date" class="form-control">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Notice Content *</label>
+                <textarea name="content" class="form-control" rows="4" placeholder="Draft circular details..." required></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeNoticeModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Broadcast Notice</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openNoticeModal() {
+        document.getElementById('noticeModal').style.display = 'flex';
+    }
+
+    function closeNoticeModal() {
+        document.getElementById('noticeModal').style.display = 'none';
+        document.getElementById('noticeForm').reset();
+    }
+
+    function handleNoticeSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const title = form.title.value;
+        const category = form.category.value;
+        const priority = form.priority.value;
+        const content = form.content.value;
+        const pubDate = form.publish_date.value;
+        const expDate = form.expiry_date.value || 'None';
+
+        let borderColor = '#2A9D8F';
+        let badgeClass = 'badge badge-success';
+        if (priority === 'Urgent') {
+            borderColor = '#E63946';
+            badgeClass = 'badge';
+        } else if (priority === 'Important') {
+            borderColor = '#F4A261';
+            badgeClass = 'badge badge-primary';
+        }
+
+        const newCard = `
+            <div class="card notice-card" data-category="${category}" data-priority="${priority}" style="border-left: 5px solid ${borderColor}; margin-bottom: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.8rem;">
+                    <span class="${badgeClass}" ${priority === 'Urgent' ? 'style="background: rgba(230, 57, 70, 0.15); color: #E63946;"' : ''}>${priority}</span>
+                    <small style="color: #888;"><i class="fas fa-calendar-day"></i> ${pubDate}</small>
+                </div>
+                <h3 class="notice-title" style="color: #0B132B; margin-bottom: 0.5rem; font-size: 1.15rem;">${title}</h3>
+                <p class="notice-body" style="color: #555; font-size: 0.9rem; line-height: 1.5; margin-bottom: 1rem;">${content}</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 0.8rem; font-size: 0.8rem; color: #777;">
+                    <span><i class="fas fa-user-shield"></i> Administration</span>
+                    <span>Expires: ${expDate}</span>
+                </div>
+            </div>
+        `;
+
+        document.getElementById('noticeGrid').insertAdjacentHTML('afterbegin', newCard);
+        closeNoticeModal();
+    }
+
+    function filterNotices() {
+        const search = document.getElementById('noticeSearch').value.toLowerCase();
+        const category = document.getElementById('categoryFilter').value;
+        const priority = document.getElementById('priorityFilter').value;
+        const cards = document.querySelectorAll('.notice-card');
+
+        cards.forEach(card => {
+            const cardCat = card.getAttribute('data-category') || '';
+            const cardPri = card.getAttribute('data-priority') || '';
+            const text = card.innerText.toLowerCase();
+
+            const matchesSearch = !search || text.includes(search);
+            const matchesCat = !category || cardCat === category;
+            const matchesPri = !priority || cardPri === priority;
+
+            if (matchesSearch && matchesCat && matchesPri) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

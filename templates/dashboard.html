@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>Dashboard Overview</h1>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(244, 162, 97, 0.2); color: #F4A261;"><i class="fas fa-users"></i></div>
+        <div class="stat-info">
+            <h3>{{ total_students }}</h3>
+            <p>Total Students</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(28, 37, 65, 0.2); color: #1C2541;"><i class="fas fa-door-open"></i></div>
+        <div class="stat-info">
+            <h3>{{ total_rooms }}</h3>
+            <p>Total Rooms</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(42, 157, 143, 0.2); color: #2A9D8F;"><i class="fas fa-rupee-sign"></i></div>
+        <div class="stat-info">
+            <h3>₹{{ total_revenue }}</h3>
+            <p>Revenue Collected</p>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-widgets">
+    <div class="card">
+        <h2>Occupancy Trend</h2>
+        <canvas id="occupancyChart"></canvas>
+    </div>
+    <div class="card">
+        <h2>Recent Notices</h2>
+        <ul class="notice-list">
+            {% for notice in notices %}
+                <li>
+                    <strong>{{ notice.title }}</strong>
+                    <span>{{ notice.date_posted.strftime('%Y-%m-%d') }}</span>
+                </li>
+            {% else %}
+                <li>No recent notices.</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const ctx = document.getElementById('occupancyChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Occupancy Rate (%)',
+                    data: [85, 88, 90, 92, 95, 96],
+                    borderColor: '#F4A261',
+                    tension: 0.4
+                }]
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,536 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Maintenance & Facility Management</h1>
+        <p style="color: #6c757d; font-size: 0.9rem;">Track equipment repairs, dispatch technicians, log maintenance costs, and manage preventive upkeep</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn btn-secondary" onclick="exportMaintenanceCSV()">
+            <i class="fas fa-file-export"></i> Export Work Orders
+        </button>
+        <button class="btn btn-primary" onclick="openMaintenanceModal()">
+            <i class="fas fa-wrench"></i> Create Work Order
+        </button>
+    </div>
+</div>
+
+<!-- Maintenance Summary Metric Cards -->
+<div class="stats-grid" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(230, 57, 70, 0.15); color: #E63946;">
+            <i class="fas fa-screwdriver-wrench"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statOpenOrders">4</h3>
+            <p>Active Work Orders</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(244, 162, 97, 0.15); color: #F4A261;">
+            <i class="fas fa-indian-rupee-sign"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statTotalCost">₹14,850</h3>
+            <p>Monthly Repair Expense</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(42, 157, 143, 0.15); color: #2A9D8F;">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statCompletedOrders">32</h3>
+            <p>Completed This Month</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(28, 37, 65, 0.15); color: #1C2541;">
+            <i class="fas fa-toolbox"></i>
+        </div>
+        <div class="stat-info">
+            <h3>6</h3>
+            <p>Staff On-Duty</p>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Filtering Controls -->
+<div class="card">
+    <div class="table-controls" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <div style="position: relative; flex: 1; min-width: 260px;">
+            <input type="text" id="maintenanceSearch" placeholder="Search work order #, location, technician, or equipment..." class="form-control" style="padding-left: 2.2rem;" onkeyup="filterMaintenance()">
+            <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #888;"></i>
+        </div>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <select id="categoryFilter" class="form-control" style="width: auto;" onchange="filterMaintenance()">
+                <option value="">All Categories</option>
+                <option value="Electrical">Electrical</option>
+                <option value="Plumbing">Plumbing</option>
+                <option value="AC/Fan">AC/Fan</option>
+                <option value="Internet">Internet</option>
+                <option value="Furniture">Furniture</option>
+                <option value="Cleaning">Cleaning</option>
+                <option value="Other">Other</option>
+            </select>
+            <select id="priorityFilter" class="form-control" style="width: auto;" onchange="filterMaintenance()">
+                <option value="">All Priorities</option>
+                <option value="High">High</option>
+                <option value="Medium">Medium</option>
+                <option value="Low">Low</option>
+            </select>
+            <select id="statusFilter" class="form-control" style="width: auto;" onchange="filterMaintenance()">
+                <option value="">All Statuses</option>
+                <option value="Scheduled">Scheduled</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Completed">Completed</option>
+            </select>
+        </div>
+    </div>
+
+    <table class="data-table" id="maintenanceTable">
+        <thead>
+            <tr>
+                <th>Order #</th>
+                <th>Category</th>
+                <th>Location / Asset</th>
+                <th>Issue Description</th>
+                <th>Assigned Staff</th>
+                <th>Priority</th>
+                <th>Estimated Cost</th>
+                <th>Status</th>
+                <th style="text-align: right;">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="maintenanceTableBody">
+            <tr data-category="AC/Fan" data-priority="High" data-status="In Progress">
+                <td><strong>#WO-501</strong></td>
+                <td><span style="font-weight: 600;"><i class="fas fa-snowflake" style="color: #2A9D8F;"></i> AC/Fan</span></td>
+                <td>Room 201 <small style="display: block; color: #888;">Split AC Unit</small></td>
+                <td>Gas leak & cooling failure</td>
+                <td>Ramesh (HVAC Tech)</td>
+                <td><span class="badge" style="background: rgba(230, 57, 70, 0.15); color: #E63946;">High</span></td>
+                <td><strong class="cost-val">₹2,800</strong></td>
+                <td><span class="badge" style="background: rgba(28, 37, 65, 0.15); color: #1C2541;">In Progress</span></td>
+                <td style="text-align: right;">
+                    <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem;" onclick="openUpdateModal('WO-501', 'Room 201 (Split AC)', 'Ramesh (HVAC Tech)', '2800', 'In Progress', 'Condenser coil leak inspection underway.')">
+                        Update
+                    </button>
+                    <button class="btn-icon text-primary" title="Print Order" onclick="printWorkOrder('WO-501', 'AC/Fan', 'Room 201 - Split AC Unit', 'Gas leak & cooling failure', 'Ramesh (HVAC Tech)', 'High', '₹2,800', '2026-10-09', 'In Progress')">
+                        <i class="fas fa-print"></i>
+                    </button>
+                </td>
+            </tr>
+            <tr data-category="Plumbing" data-priority="Medium" data-status="Scheduled">
+                <td><strong>#WO-502</strong></td>
+                <td><span style="font-weight: 600;"><i class="fas fa-faucet-drip text-primary"></i> Plumbing</span></td>
+                <td>Common Washroom 1st Flr <small style="display: block; color: #888;">Drainage Line</small></td>
+                <td>Main drainage pipe blockage</td>
+                <td>Sunil (Plumber)</td>
+                <td><span class="badge" style="background: rgba(244, 162, 97, 0.15); color: #F4A261;">Medium</span></td>
+                <td><strong class="cost-val">₹1,200</strong></td>
+                <td><span class="badge badge-primary">Scheduled</span></td>
+                <td style="text-align: right;">
+                    <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem;" onclick="openUpdateModal('WO-502', 'Common Washroom 1st Flr', 'Sunil (Plumber)', '1200', 'Scheduled', 'Scheduled for 3:00 PM today.')">
+                        Update
+                    </button>
+                    <button class="btn-icon text-primary" title="Print Order" onclick="printWorkOrder('WO-502', 'Plumbing', 'Common Washroom 1st Flr', 'Main drainage pipe blockage', 'Sunil (Plumber)', 'Medium', '₹1,200', '2026-10-09', 'Scheduled')">
+                        <i class="fas fa-print"></i>
+                    </button>
+                </td>
+            </tr>
+            <tr data-category="Electrical" data-priority="High" data-status="Completed">
+                <td><strong>#WO-498</strong></td>
+                <td><span style="font-weight: 600;"><i class="fas fa-bolt" style="color: #F4A261;"></i> Electrical</span></td>
+                <td>Block B Corridor <small style="display: block; color: #888;">Emergency Lights</small></td>
+                <td>Inverter relay replacement</td>
+                <td>Manoj (Electrician)</td>
+                <td><span class="badge" style="background: rgba(230, 57, 70, 0.15); color: #E63946;">High</span></td>
+                <td><strong class="cost-val">₹3,450</strong></td>
+                <td><span class="badge badge-success">Completed</span></td>
+                <td style="text-align: right;">
+                    <button class="btn-icon text-primary" title="Print Order" onclick="printWorkOrder('WO-498', 'Electrical', 'Block B Corridor', 'Inverter relay replacement', 'Manoj (Electrician)', 'High', '₹3,450', '2026-10-07', 'Completed')">
+                        <i class="fas fa-print"></i>
+                    </button>
+                </td>
+            </tr>
+            <tr data-category="Furniture" data-priority="Low" data-status="Completed">
+                <td><strong>#WO-495</strong></td>
+                <td><span style="font-weight: 600;"><i class="fas fa-chair" style="color: #6c757d;"></i> Furniture</span></td>
+                <td>Study Hall <small style="display: block; color: #888;">Study Desks</small></td>
+                <td>Hinges and edge-banding repair</td>
+                <td>Vikram (Carpenter)</td>
+                <td><span class="badge" style="background: rgba(42, 157, 143, 0.15); color: #2A9D8F;">Low</span></td>
+                <td><strong class="cost-val">₹950</strong></td>
+                <td><span class="badge badge-success">Completed</span></td>
+                <td style="text-align: right;">
+                    <button class="btn-icon text-primary" title="Print Order" onclick="printWorkOrder('WO-495', 'Furniture', 'Study Hall', 'Hinges and edge-banding repair', 'Vikram (Carpenter)', 'Low', '₹950', '2026-10-06', 'Completed')">
+                        <i class="fas fa-print"></i>
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal: New Work Order Form -->
+<div id="maintenanceModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1050; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+    <div style="background: #ffffff; border-radius: 8px; width: 100%; max-width: 650px; padding: 2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.25); max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.3rem; color: #0B132B;"><i class="fas fa-wrench" style="color: #F4A261;"></i> Create Maintenance Work Order</h2>
+            <button onclick="closeMaintenanceModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #888;">&times;</button>
+        </div>
+
+        <form id="maintenanceForm" onsubmit="handleMaintenanceSubmit(event)">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Category *</label>
+                    <select name="category" class="form-control" required>
+                        <option value="Electrical">Electrical</option>
+                        <option value="Plumbing">Plumbing</option>
+                        <option value="AC/Fan">AC/Fan</option>
+                        <option value="Internet">Internet</option>
+                        <option value="Furniture">Furniture</option>
+                        <option value="Cleaning">Cleaning</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Location / Asset Target *</label>
+                    <input type="text" name="location" class="form-control" placeholder="e.g. Room 302, Mess Refrigerator, 2nd Floor Lift" required>
+                </div>
+                <div class="form-group">
+                    <label>Assigned Staff / Contractor *</label>
+                    <select name="staff" class="form-control" required>
+                        <option value="Manoj (Electrician)">Manoj (Electrician)</option>
+                        <option value="Sunil (Plumber)">Sunil (Plumber)</option>
+                        <option value="Ramesh (HVAC Tech)">Ramesh (HVAC Tech)</option>
+                        <option value="Vikram (Carpenter)">Vikram (Carpenter)</option>
+                        <option value="Kiran (IT Admin)">Kiran (IT Support)</option>
+                        <option value="Third-Party Contractor">Third-Party Contractor</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Priority Level *</label>
+                    <select name="priority" class="form-control" required>
+                        <option value="Low">Low</option>
+                        <option value="Medium" selected>Medium</option>
+                        <option value="High">High (Immediate)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Estimated Cost (₹)</label>
+                    <input type="number" name="cost" class="form-control" placeholder="0" min="0" value="0">
+                </div>
+                <div class="form-group">
+                    <label>Scheduled Date *</label>
+                    <input type="date" name="scheduled_date" class="form-control" value="2026-10-09" required>
+                </div>
+                <div class="form-group full-width">
+                    <label>Problem Description *</label>
+                    <textarea name="description" class="form-control" rows="2" placeholder="Describe the fault or maintenance task needed..." required></textarea>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeMaintenanceModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Dispatch Work Order</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Update Work Order Status & Final Cost -->
+<div id="updateModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1050; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+    <div style="background: #ffffff; border-radius: 8px; width: 100%; max-width: 550px; padding: 2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.25);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.25rem; color: #0B132B;"><i class="fas fa-clipboard-check" style="color: #2A9D8F;"></i> Update Work Order</h2>
+            <button onclick="closeUpdateModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #888;">&times;</button>
+        </div>
+
+        <form id="updateOrderForm" onsubmit="handleUpdateSubmit(event)">
+            <input type="hidden" id="updateOrderId">
+            <div style="margin-bottom: 1rem; background: #f8f9fa; padding: 0.8rem; border-radius: 4px; font-size: 0.9rem;">
+                <p style="margin: 0;"><strong>Work Order:</strong> <span id="lblOrderNo"></span></p>
+                <p style="margin: 4px 0 0 0;"><strong>Target:</strong> <span id="lblTarget"></span></p>
+            </div>
+
+            <div class="form-group">
+                <label>Assigned Technician</label>
+                <input type="text" id="txtTech" class="form-control" readonly style="background: #eee;">
+            </div>
+            <div class="form-group">
+                <label>Actual / Final Incurred Cost (₹)</label>
+                <input type="number" id="numCost" class="form-control" min="0" required>
+            </div>
+            <div class="form-group">
+                <label>Status *</label>
+                <select id="selStatus" class="form-control" required>
+                    <option value="Scheduled">Scheduled</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Technician Resolution Notes</label>
+                <textarea id="txtNotes" class="form-control" rows="3" placeholder="Parts swapped, repairs performed, invoice receipt #..."></textarea>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeUpdateModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Updates</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Hidden Printable Work Order Area -->
+<div id="maintenancePrintArea" style="display: none;">
+    <div style="padding: 2.5rem; border: 2px solid #0B132B; max-width: 650px; margin: 0 auto; font-family: 'Segoe UI', Tahoma, sans-serif;">
+        <div style="text-align: center; border-bottom: 2px solid #0B132B; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+            <h2 style="margin: 0; color: #0B132B; font-size: 1.5rem; letter-spacing: 1px;">LUXE HOSTEL MANAGEMENT</h2>
+            <p style="margin: 4px 0; color: #555; font-size: 0.85rem;">MAINTENANCE REPAIR JOB CARD</p>
+        </div>
+
+        <table style="width: 100%; margin-bottom: 1.5rem; font-size: 0.95rem;">
+            <tr>
+                <td><strong>Job Card #:</strong> <span id="prWoNo"></span></td>
+                <td style="text-align: right;"><strong>Date Issued:</strong> <span id="prWoDate"></span></td>
+            </tr>
+            <tr>
+                <td><strong>Department:</strong> <span id="prWoCat"></span></td>
+                <td style="text-align: right;"><strong>Priority:</strong> <span id="prWoPri"></span></td>
+            </tr>
+            <tr>
+                <td><strong>Location/Unit:</strong> <span id="prWoLoc"></span></td>
+                <td style="text-align: right;"><strong>Technician:</strong> <span id="prWoTech"></span></td>
+            </tr>
+        </table>
+
+        <div style="border: 1px solid #ddd; padding: 1rem; border-radius: 4px; margin-bottom: 1.5rem;">
+            <h4 style="margin: 0 0 6px 0; font-size: 0.95rem; color: #0B132B;">Required Task:</h4>
+            <p id="prWoDesc" style="margin: 0 0 10px 0; font-weight: 600;"></p>
+            <p style="margin: 0; font-size: 0.9rem;"><strong>Estimated Allocation:</strong> <span id="prWoCost"></span></p>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem; font-size: 0.9rem;">
+            <tr style="border-bottom: 1px solid #ddd;">
+                <td style="padding: 8px 0;"><strong>Status:</strong> <span id="prWoStatus"></span></td>
+                <td style="text-align: right; padding: 8px 0;"><strong>Materials Used:</strong> ______________________</td>
+            </tr>
+        </table>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 3.5rem; padding-top: 1rem;">
+            <div style="text-align: center; width: 180px;">
+                <hr style="border: 0; border-top: 1px solid #444; margin-bottom: 5px;">
+                <span style="font-size: 0.8rem;">Technician Signature</span>
+            </div>
+            <div style="text-align: center; width: 180px;">
+                <hr style="border: 0; border-top: 1px solid #444; margin-bottom: 5px;">
+                <span style="font-size: 0.8rem;">Facility Manager Approval</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let activeWoRow = null;
+
+    function openMaintenanceModal() {
+        document.getElementById('maintenanceModal').style.display = 'flex';
+    }
+
+    function closeMaintenanceModal() {
+        document.getElementById('maintenanceModal').style.display = 'none';
+        document.getElementById('maintenanceForm').reset();
+    }
+
+    function openUpdateModal(woId, target, tech, cost, status, notes) {
+        document.getElementById('updateOrderId').value = woId;
+        document.getElementById('lblOrderNo').innerText = '#' + woId;
+        document.getElementById('lblTarget').innerText = target;
+        document.getElementById('txtTech').value = tech;
+        document.getElementById('numCost').value = cost.replace(/[^0-9]/g, '');
+        document.getElementById('selStatus').value = status;
+        document.getElementById('txtNotes').value = notes || '';
+
+        const rows = document.querySelectorAll('#maintenanceTableBody tr');
+        rows.forEach(r => {
+            if (r.cells[0].innerText.includes(woId)) {
+                activeWoRow = r;
+            }
+        });
+
+        document.getElementById('updateModal').style.display = 'flex';
+    }
+
+    function closeUpdateModal() {
+        document.getElementById('updateModal').style.display = 'none';
+        activeWoRow = null;
+    }
+
+    function handleMaintenanceSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const category = form.category.value;
+        const location = form.location.value;
+        const staff = form.staff.value;
+        const priority = form.priority.value;
+        const cost = parseFloat(form.cost.value) || 0;
+        const date = form.scheduled_date.value;
+        const desc = form.description.value;
+        const woId = 'WO-' + Math.floor(510 + Math.random() * 400);
+
+        let icon = 'fas fa-tools';
+        if (category === 'Electrical') icon = 'fas fa-bolt';
+        else if (category === 'Plumbing') icon = 'fas fa-faucet-drip';
+        else if (category === 'AC/Fan') icon = 'fas fa-snowflake';
+        else if (category === 'Furniture') icon = 'fas fa-chair';
+        else if (category === 'Internet') icon = 'fas fa-wifi';
+
+        const priorityBadge = priority === 'High' 
+            ? 'background: rgba(230, 57, 70, 0.15); color: #E63946;' 
+            : (priority === 'Medium' ? 'background: rgba(244, 162, 97, 0.15); color: #F4A261;' : 'background: rgba(42, 157, 143, 0.15); color: #2A9D8F;');
+
+        const newRow = `
+            <tr data-category="${category}" data-priority="${priority}" data-status="Scheduled">
+                <td><strong>#${woId}</strong></td>
+                <td><span style="font-weight: 600;"><i class="${icon}"></i> ${category}</span></td>
+                <td>${location}</td>
+                <td>${desc}</td>
+                <td>${staff}</td>
+                <td><span class="badge" style="${priorityBadge}">${priority}</span></td>
+                <td><strong class="cost-val">₹${cost.toLocaleString('en-IN')}</strong></td>
+                <td><span class="badge badge-primary">Scheduled</span></td>
+                <td style="text-align: right;">
+                    <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 0.8rem;" onclick="openUpdateModal('${woId}', '${location}', '${staff}', '${cost}', 'Scheduled', '${desc}')">
+                        Update
+                    </button>
+                    <button class="btn-icon text-primary" title="Print Order" onclick="printWorkOrder('${woId}', '${category}', '${location}', '${desc}', '${staff}', '${priority}', '₹${cost}', '${date}', 'Scheduled')">
+                        <i class="fas fa-print"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+
+        document.getElementById('maintenanceTableBody').insertAdjacentHTML('afterbegin', newRow);
+        updateCounters();
+        closeMaintenanceModal();
+    }
+
+    function handleUpdateSubmit(e) {
+        e.preventDefault();
+        if (!activeWoRow) return;
+
+        const newCost = parseFloat(document.getElementById('numCost').value) || 0;
+        const newStatus = document.getElementById('selStatus').value;
+
+        activeWoRow.setAttribute('data-status', newStatus);
+        activeWoRow.querySelector('.cost-val').innerText = '₹' + newCost.toLocaleString('en-IN');
+        
+        const badge = activeWoRow.cells[7].querySelector('.badge');
+        badge.innerText = newStatus;
+        if (newStatus === 'Completed') {
+            badge.className = 'badge badge-success';
+        } else if (newStatus === 'In Progress') {
+            badge.className = 'badge';
+            badge.style.background = 'rgba(28, 37, 65, 0.15)';
+            badge.style.color = '#1C2541';
+        } else {
+            badge.className = 'badge badge-primary';
+            badge.style.background = '';
+            badge.style.color = '';
+        }
+
+        updateCounters();
+        closeUpdateModal();
+    }
+
+    function updateCounters() {
+        const activeCount = document.querySelectorAll('#maintenanceTableBody tr:not([data-status="Completed"])').length;
+        const completedCount = document.querySelectorAll('#maintenanceTableBody tr[data-status="Completed"]').length;
+        
+        let sumCost = 0;
+        document.querySelectorAll('#maintenanceTableBody .cost-val').forEach(el => {
+            sumCost += parseFloat(el.innerText.replace(/[^0-9]/g, '')) || 0;
+        });
+
+        document.getElementById('statOpenOrders').innerText = activeCount;
+        document.getElementById('statCompletedOrders').innerText = completedCount;
+        document.getElementById('statTotalCost').innerText = '₹' + sumCost.toLocaleString('en-IN');
+    }
+
+    function filterMaintenance() {
+        const query = document.getElementById('maintenanceSearch').value.toLowerCase();
+        const category = document.getElementById('categoryFilter').value;
+        const priority = document.getElementById('priorityFilter').value;
+        const status = document.getElementById('statusFilter').value;
+
+        const rows = document.querySelectorAll('#maintenanceTableBody tr');
+        rows.forEach(row => {
+            const rowCat = row.getAttribute('data-category') || '';
+            const rowPri = row.getAttribute('data-priority') || '';
+            const rowStat = row.getAttribute('data-status') || '';
+            const text = row.innerText.toLowerCase();
+
+            const matchesSearch = !query || text.includes(query);
+            const matchesCat = !category || rowCat === category;
+            const matchesPri = !priority || rowPri === priority;
+            const matchesStat = !status || rowStat === status;
+
+            if (matchesSearch && matchesCat && matchesPri && matchesStat) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function printWorkOrder(woNo, cat, loc, desc, staff, pri, cost, date, status) {
+        document.getElementById('prWoNo').innerText = '#' + woNo;
+        document.getElementById('prWoCat').innerText = cat;
+        document.getElementById('prWoLoc').innerText = loc;
+        document.getElementById('prWoDesc').innerText = desc;
+        document.getElementById('prWoTech').innerText = staff;
+        document.getElementById('prWoPri').innerText = pri;
+        document.getElementById('prWoCost').innerText = cost;
+        document.getElementById('prWoDate').innerText = date;
+        document.getElementById('prWoStatus').innerText = status;
+
+        const printContents = document.getElementById('maintenancePrintArea').innerHTML;
+        const originalContents = document.body.innerHTML;
+
+        document.body.innerHTML = printContents;
+        window.print();
+        document.body.innerHTML = originalContents;
+        window.location.reload();
+    }
+
+    function exportMaintenanceCSV() {
+        let csv = 'Work Order #,Category,Location / Asset,Description,Assigned Staff,Priority,Cost,Status\n';
+        const rows = document.querySelectorAll('#maintenanceTableBody tr');
+
+        rows.forEach(row => {
+            const cols = row.querySelectorAll('td');
+            const wo = cols[0].innerText.trim();
+            const cat = cols[1].innerText.trim();
+            const loc = cols[2].innerText.replace(/\n/g, ' ').trim();
+            const desc = cols[3].innerText.replace(/"/g, '""').trim();
+            const staff = cols[4].innerText.trim();
+            const pri = cols[5].innerText.trim();
+            const cost = cols[6].innerText.replace(/[^0-9]/g, '');
+            const status = cols[7].innerText.trim();
+
+            csv += `"${wo}","${cat}","${loc}","${desc}","${staff}","${pri}","${cost}","${status}"\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'Hostel_Maintenance_Work_Orders.csv');
+        a.click();
+    }
+</script>
+{% endblock %}

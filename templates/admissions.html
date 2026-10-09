@@ -1,0 +1,367 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Hostel Admissions</h1>
+        <p style="color: #6c757d; font-size: 0.9rem;">Process new student admissions and generate admission records</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn btn-secondary" onclick="window.print()">
+            <i class="fas fa-print"></i> Print Page
+        </button>
+        <button class="btn btn-primary" onclick="openAdmissionModal()">
+            <i class="fas fa-plus"></i> New Admission
+        </button>
+    </div>
+</div>
+
+<!-- Admission Statistics Overview -->
+<div class="stats-grid" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(42, 157, 143, 0.15); color: #2A9D8F;">
+            <i class="fas fa-user-check"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statTotalAdmissions">128</h3>
+            <p>Total Admitted</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(244, 162, 97, 0.15); color: #F4A261;">
+            <i class="fas fa-clock"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statPendingApprovals">6</h3>
+            <p>Pending Approvals</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(28, 37, 65, 0.15); color: #1C2541;">
+            <i class="fas fa-shield-alt"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statTotalDeposits">₹6,40,000</h3>
+            <p>Security Deposits Held</p>
+        </div>
+    </div>
+</div>
+
+<!-- Admissions Table Container -->
+<div class="card">
+    <div class="table-controls" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap;">
+        <div style="position: relative; flex: 1; min-width: 250px;">
+            <input type="text" id="searchInput" placeholder="Search by student name, ID, or room..." class="form-control" style="padding-left: 2.2rem;">
+            <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #888;"></i>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <select id="statusFilter" class="form-control" style="width: auto;" onchange="filterAdmissions()">
+                <option value="">All Statuses</option>
+                <option value="Confirmed">Confirmed</option>
+                <option value="Pending">Pending</option>
+                <option value="Cancelled">Cancelled</option>
+            </select>
+            <button class="btn btn-secondary" onclick="exportAdmissionsCSV()">
+                <i class="fas fa-file-export"></i> Export CSV
+            </button>
+        </div>
+    </div>
+
+    <table class="data-table" id="dataTable">
+        <thead>
+            <tr>
+                <th>Adm. No</th>
+                <th>Student ID</th>
+                <th>Student Name</th>
+                <th>Room & Bed</th>
+                <th>Admission Date</th>
+                <th>Deposit</th>
+                <th>Monthly Rent</th>
+                <th>Status</th>
+                <th style="text-align: right;">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="admissionTableBody">
+            <tr>
+                <td><strong>#ADM-1001</strong></td>
+                <td>STU-2026-01</td>
+                <td>Aarav Sharma</td>
+                <td>Room 101 - Bed A</td>
+                <td>2026-02-01</td>
+                <td>₹10,000</td>
+                <td>₹6,500</td>
+                <td><span class="badge badge-success">Confirmed</span></td>
+                <td style="text-align: right;">
+                    <button class="btn-icon text-primary" title="Print Receipt" onclick="printReceipt('ADM-1001', 'Aarav Sharma', 'STU-2026-01', 'Room 101', 'Bed A', '2026-02-01', '₹10,000', '₹6,500')">
+                        <i class="fas fa-file-invoice"></i>
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>#ADM-1002</strong></td>
+                <td>STU-2026-02</td>
+                <td>Priya Patel</td>
+                <td>Room 204 - Bed B</td>
+                <td>2026-02-03</td>
+                <td>₹10,000</td>
+                <td>₹7,500</td>
+                <td><span class="badge badge-success">Confirmed</span></td>
+                <td style="text-align: right;">
+                    <button class="btn-icon text-primary" title="Print Receipt" onclick="printReceipt('ADM-1002', 'Priya Patel', 'STU-2026-02', 'Room 204', 'Bed B', '2026-02-03', '₹10,000', '₹7,500')">
+                        <i class="fas fa-file-invoice"></i>
+                    </button>
+                </td>
+            </tr>
+            <tr>
+                <td><strong>#ADM-1003</strong></td>
+                <td>STU-2026-03</td>
+                <td>Rohan Verma</td>
+                <td>Room 102 - Bed A</td>
+                <td>2026-02-05</td>
+                <td>₹8,000</td>
+                <td>₹5,500</td>
+                <td><span class="badge badge-primary">Pending</span></td>
+                <td style="text-align: right;">
+                    <button class="btn-icon text-primary" title="Print Receipt" onclick="printReceipt('ADM-1003', 'Rohan Verma', 'STU-2026-03', 'Room 102', 'Bed A', '2026-02-05', '₹8,000', '₹5,500')">
+                        <i class="fas fa-file-invoice"></i>
+                    </button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal: New Admission Form -->
+<div id="admissionModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.55); z-index: 1050; align-items: center; justify-content: center; backdrop-filter: blur(3px);">
+    <div style="background: #ffffff; border-radius: 8px; width: 100%; max-width: 650px; padding: 2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.25); max-height: 90vh; overflow-y: auto;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+            <h2 style="font-size: 1.3rem; color: #0B132B;"><i class="fas fa-id-badge" style="color: #F4A261;"></i> New Student Admission</h2>
+            <button onclick="closeAdmissionModal()" style="background: none; border: none; font-size: 1.25rem; cursor: pointer; color: #888;">&times;</button>
+        </div>
+
+        <form id="admissionForm" onsubmit="handleAdmissionSubmit(event)">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Student ID *</label>
+                    <input type="text" name="student_id" required class="form-control" placeholder="e.g. STU-2026-05">
+                </div>
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" name="full_name" required class="form-control" placeholder="Student's legal name">
+                </div>
+                <div class="form-group">
+                    <label>Assign Room *</label>
+                    <select name="room_number" id="roomSelect" required class="form-control" onchange="updateAvailableBeds()">
+                        <option value="">Select Room</option>
+                        <option value="101" data-rent="6500">Room 101 (Double - 1 Bed Free)</option>
+                        <option value="102" data-rent="5500">Room 102 (Triple - 2 Beds Free)</option>
+                        <option value="201" data-rent="9000">Room 201 (Single - 1 Bed Free)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Assign Bed *</label>
+                    <select name="bed_number" id="bedSelect" required class="form-control">
+                        <option value="">Select Room First</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Admission Date *</label>
+                    <input type="date" name="admission_date" required class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Expected Leaving Date</label>
+                    <input type="date" name="expected_leaving_date" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label>Security Deposit (₹) *</label>
+                    <input type="number" name="security_deposit" required class="form-control" placeholder="10000" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Monthly Rent (₹) *</label>
+                    <input type="number" name="monthly_rent" id="monthlyRentInput" required class="form-control" placeholder="Auto-populated" min="0">
+                </div>
+                <div class="form-group full-width">
+                    <label>Admission Status</label>
+                    <select name="status" class="form-control">
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Pending">Pending Verification</option>
+                    </select>
+                </div>
+                <div class="form-group full-width">
+                    <label>Remarks / Notes</label>
+                    <textarea name="remarks" class="form-control" rows="2" placeholder="Any additional admission terms or notes..."></textarea>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeAdmissionModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Confirm Admission</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Print-Ready Admission Receipt (Hidden from screen view, shown on print receipt trigger) -->
+<div id="receiptPrintArea" style="display: none;">
+    <div style="padding: 2.5rem; border: 2px solid #333; max-width: 700px; margin: 0 auto; font-family: 'Segoe UI', Tahoma, sans-serif;">
+        <div style="text-align: center; border-bottom: 2px solid #333; padding-bottom: 1rem; margin-bottom: 1.5rem;">
+            <h1 style="margin: 0; font-size: 1.8rem; letter-spacing: 1px;">LUXE HOSTEL MANAGEMENT</h1>
+            <p style="margin: 5px 0; color: #555;">Official Admission & Security Deposit Receipt</p>
+        </div>
+
+        <table style="width: 100%; margin-bottom: 1.5rem; font-size: 0.95rem;">
+            <tr>
+                <td><strong>Receipt No:</strong> <span id="recNo"></span></td>
+                <td style="text-align: right;"><strong>Date:</strong> <span id="recDate"></span></td>
+            </tr>
+            <tr>
+                <td><strong>Student ID:</strong> <span id="recStudentId"></span></td>
+                <td style="text-align: right;"><strong>Student Name:</strong> <span id="recName"></span></td>
+            </tr>
+            <tr>
+                <td><strong>Allocated Room:</strong> <span id="recRoom"></span></td>
+                <td style="text-align: right;"><strong>Allocated Bed:</strong> <span id="recBed"></span></td>
+            </tr>
+        </table>
+
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 2rem;">
+            <thead>
+                <tr style="background: #f0f0f0; border-top: 1px solid #333; border-bottom: 1px solid #333;">
+                    <th style="padding: 8px; text-align: left;">Particulars</th>
+                    <th style="padding: 8px; text-align: right;">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #eee;">Refundable Security Deposit</td>
+                    <td style="padding: 8px; text-align: right; border-bottom: 1px solid #eee;" id="recDeposit">₹0</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #eee;">Agreed Monthly Rent</td>
+                    <td style="padding: 8px; text-align: right; border-bottom: 1px solid #eee;" id="recRent">₹0</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="display: flex; justify-content: space-between; margin-top: 3rem; padding-top: 1rem;">
+            <div style="text-align: center; width: 200px;">
+                <hr style="border: 0; border-top: 1px solid #444; margin-bottom: 5px;">
+                <span style="font-size: 0.85rem;">Student Signature</span>
+            </div>
+            <div style="text-align: center; width: 200px;">
+                <hr style="border: 0; border-top: 1px solid #444; margin-bottom: 5px;">
+                <span style="font-size: 0.85rem;">Warden / Authority Signature</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Modal controls
+    function openAdmissionModal() {
+        document.getElementById('admissionModal').style.display = 'flex';
+    }
+
+    function closeAdmissionModal() {
+        document.getElementById('admissionModal').style.display = 'none';
+        document.getElementById('admissionForm').reset();
+    }
+
+    // Dynamic bed population & rent calculation
+    function updateAvailableBeds() {
+        const roomSelect = document.getElementById('roomSelect');
+        const bedSelect = document.getElementById('bedSelect');
+        const rentInput = document.getElementById('monthlyRentInput');
+
+        const selectedOption = roomSelect.options[roomSelect.selectedIndex];
+        const rent = selectedOption.getAttribute('data-rent') || '';
+        rentInput.value = rent;
+
+        bedSelect.innerHTML = '<option value="">Select Bed</option>';
+        if (roomSelect.value === '101') {
+            bedSelect.innerHTML += '<option value="Bed B">Bed B (Available)</option>';
+        } else if (roomSelect.value === '102') {
+            bedSelect.innerHTML += '<option value="Bed B">Bed B (Available)</option><option value="Bed C">Bed C (Available)</option>';
+        } else if (roomSelect.value === '201') {
+            bedSelect.innerHTML += '<option value="Bed A">Bed A (Available)</option>';
+        }
+    }
+
+    // Client-side submission mock & append
+    function handleAdmissionSubmit(e) {
+        e.preventDefault();
+        const form = e.target;
+        const newRow = `
+            <tr>
+                <td><strong>#ADM-${Math.floor(1000 + Math.random() * 9000)}</strong></td>
+                <td>${form.student_id.value}</td>
+                <td>${form.full_name.value}</td>
+                <td>Room ${form.room_number.value} - ${form.bed_number.value}</td>
+                <td>${form.admission_date.value}</td>
+                <td>₹${form.security_deposit.value}</td>
+                <td>₹${form.monthly_rent.value}</td>
+                <td><span class="badge badge-success">${form.status.value}</span></td>
+                <td style="text-align: right;">
+                    <button class="btn-icon text-primary" title="Print Receipt" onclick="printReceipt('ADM-NEW', '${form.full_name.value}', '${form.student_id.value}', 'Room ${form.room_number.value}', '${form.bed_number.value}', '${form.admission_date.value}', '₹${form.security_deposit.value}', '₹${form.monthly_rent.value}')">
+                        <i class="fas fa-file-invoice"></i>
+                    </button>
+                </td>
+            </tr>
+        `;
+        document.getElementById('admissionTableBody').insertAdjacentHTML('afterbegin', newRow);
+        closeAdmissionModal();
+    }
+
+    // Print Receipt Function
+    function printReceipt(admNo, name, stuId, room, bed, date, deposit, rent) {
+        document.getElementById('recNo').innerText = admNo;
+        document.getElementById('recName').innerText = name;
+        document.getElementById('recStudentId').innerText = stuId;
+        document.getElementById('recRoom').innerText = room;
+        document.getElementById('recBed').innerText = bed;
+        document.getElementById('recDate').innerText = date;
+        document.getElementById('recDeposit').innerText = deposit;
+        document.getElementById('recRent').innerText = rent;
+
+        const printContents = document.getElementById('receiptPrintArea').innerHTML;
+        const originalContents = document.body.innerHTML;
+
+        document.body.innerHTML = printContents;
+        window.print();
+        document.body.innerHTML = originalContents;
+        window.location.reload();
+    }
+
+    // Status filter
+    function filterAdmissions() {
+        const filter = document.getElementById('statusFilter').value.toLowerCase();
+        const rows = document.querySelectorAll('#admissionTableBody tr');
+        rows.forEach(row => {
+            const statusBadge = row.querySelector('.badge');
+            if (!filter || (statusBadge && statusBadge.textContent.toLowerCase() === filter)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    // CSV Export
+    function exportAdmissionsCSV() {
+        let csv = 'Admission No,Student ID,Student Name,Room & Bed,Admission Date,Deposit,Monthly Rent,Status\n';
+        const rows = document.querySelectorAll('#admissionTableBody tr');
+        rows.forEach(row => {
+            const cols = row.querySelectorAll('td');
+            const data = Array.from(cols).slice(0, 8).map(col => `"${col.innerText.trim()}"`).join(',');
+            csv += data + '\n';
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('href', url);
+        a.setAttribute('download', 'admissions_report.csv');
+        a.click();
+    }
+</script>
+{% endblock %}

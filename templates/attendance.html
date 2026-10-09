@@ -1,0 +1,358 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Attendance Management</h1>
+        <p style="color: #6c757d; font-size: 0.9rem;">Record daily roll calls, manage leaves, and monitor attendance metrics</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn btn-secondary" onclick="exportAttendanceCSV()">
+            <i class="fas fa-file-export"></i> Export Report
+        </button>
+        <button class="btn btn-primary" onclick="submitAttendanceBatch()">
+            <i class="fas fa-save"></i> Save Attendance
+        </button>
+    </div>
+</div>
+
+<!-- Attendance Metrics Cards -->
+<div class="stats-grid" style="margin-bottom: 2rem;">
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(42, 157, 143, 0.15); color: #2A9D8F;">
+            <i class="fas fa-user-check"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statPresentCount">42</h3>
+            <p>Present Today</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(230, 57, 70, 0.15); color: #E63946;">
+            <i class="fas fa-user-times"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statAbsentCount">3</h3>
+            <p>Absent Today</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(244, 162, 97, 0.15); color: #F4A261;">
+            <i class="fas fa-business-time"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statLeaveCount">2</h3>
+            <p>Approved Leave</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background: rgba(28, 37, 65, 0.15); color: #1C2541;">
+            <i class="fas fa-chart-pie"></i>
+        </div>
+        <div class="stat-info">
+            <h3 id="statOverallRate">89.4%</h3>
+            <p>Monthly Average</p>
+        </div>
+    </div>
+</div>
+
+<!-- Filter & Control Panel -->
+<div class="card" style="margin-bottom: 1.5rem;">
+    <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between;">
+        <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;">
+            <div class="form-group" style="margin: 0; min-width: 180px;">
+                <label style="margin-bottom: 4px; font-size: 0.8rem;">Select Date</label>
+                <input type="date" id="attendanceDate" class="form-control" value="2026-10-09" onchange="filterRecords()">
+            </div>
+            <div class="form-group" style="margin: 0; min-width: 150px;">
+                <label style="margin-bottom: 4px; font-size: 0.8rem;">Floor / Wing</label>
+                <select id="floorFilter" class="form-control" onchange="filterRecords()">
+                    <option value="">All Wings</option>
+                    <option value="Floor 1">Floor 1</option>
+                    <option value="Floor 2">Floor 2</option>
+                    <option value="Floor 3">Floor 3</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin: 0; min-width: 150px;">
+                <label style="margin-bottom: 4px; font-size: 0.8rem;">Filter Status</label>
+                <select id="statusFilter" class="form-control" onchange="filterRecords()">
+                    <option value="">All Statuses</option>
+                    <option value="Present">Present</option>
+                    <option value="Absent">Absent</option>
+                    <option value="Late">Late</option>
+                    <option value="Leave">Leave</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 8px; align-self: flex-end;">
+            <button class="btn btn-secondary" type="button" onclick="bulkMark('Present')" style="padding: 0.5rem 0.9rem; font-size: 0.85rem;">
+                <i class="fas fa-check-double text-success"></i> Mark All Present
+            </button>
+            <button class="btn btn-secondary" type="button" onclick="bulkMark('Absent')" style="padding: 0.5rem 0.9rem; font-size: 0.85rem;">
+                <i class="fas fa-times text-danger"></i> Mark All Absent
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Main Attendance Registry -->
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2>Daily Attendance Roster</h2>
+        <div style="position: relative; width: 280px;">
+            <input type="text" id="searchInput" placeholder="Search by student or room..." class="form-control" style="padding-left: 2rem;">
+            <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #888; font-size: 0.85rem;"></i>
+        </div>
+    </div>
+
+    <table class="data-table" id="attendanceTable">
+        <thead>
+            <tr>
+                <th>Student ID</th>
+                <th>Student Name</th>
+                <th>Room & Bed</th>
+                <th>Monthly Rate</th>
+                <th>Attendance Status</th>
+                <th>Time In / Remarks</th>
+            </tr>
+        </thead>
+        <tbody id="attendanceTableBody">
+            <tr data-floor="Floor 1">
+                <td><strong>STU-2026-01</strong></td>
+                <td>Aarav Sharma</td>
+                <td>Room 101 - Bed A</td>
+                <td>
+                    <span style="font-weight: 600; color: #2A9D8F;">96%</span>
+                </td>
+                <td>
+                    <div class="attendance-btn-group" data-student-id="STU-2026-01">
+                        <button type="button" class="att-btn active-present" onclick="setStatus(this, 'Present')">Present</button>
+                        <button type="button" class="att-btn" onclick="setStatus(this, 'Absent')">Absent</button>
+                        <button type="button" class="att-btn" onclick="setStatus(this, 'Late')">Late</button>
+                        <button type="button" class="att-btn" onclick="setStatus(this, 'Leave')">Leave</button>
+                    </div>
+                </td>
+                <td>
+                    <input type="text" class="form-control remark-input" placeholder="Entry time or notes" value="09:15 PM">
+                </td>
+            </tr>
+            <tr data-floor="Floor 2">
+                <td><strong>STU-2026-02</strong></td>
+                <td>Priya Patel</td>
+                <td>Room 204 - Bed B</td>
+                <td>
+                    <span style="font-weight: 600; color: #2A9D8F;">92%</span>
+                </td>
+                <td>
+                    <div class="attendance-btn-group" data-student-id="STU-2026-02">
+                        <button type="button" class="att-btn active-present" onclick="setStatus(this, 'Present')">Present</button>
+                        <button type="button" class="att-btn" onclick="setStatus(this, 'Absent')">Absent</button>
+                        <button type="button" class="att-btn" onclick="setStatus(this, 'Late')">Late</button>
+                        <button type="button" class="att-btn" onclick="setStatus(this, 'Leave')">Leave</button>
+                    </div>
+                </td>
+                <td>
+                    <input type="text" class="form-control remark-input" placeholder="Entry time or notes" value="08:45 PM">
+                </td>
+            </tr>
+            <tr data-floor="Floor 1">
+                <td><strong>STU-2026-03</strong></td>
+                <td>Rohan Verma</td>
+                <td>Room 102 - Bed A</td>
+                <td>
+                    <span style="font-weight: 600; color: #F4A261;">78%</span>
+                </td>
+                <td>
+                    <div class="attendance-btn-group" data-student-id="STU-2026-03">
+                        <button type="button" class="att-btn" onclick="setStatus(this, 'Present')">Present</button>
+                        <button type="button" class="att-btn active-absent" onclick="setStatus(this, 'Absent')">Absent</button>
+                        <button type="button" class="att-btn" onclick="setStatus(this, 'Late')">Late</button>
+                        <button type="button" class="att-btn" onclick="setStatus(this, 'Leave')">Leave</button>
+                    </div>
+                </td>
+                <td>
+                    <input type="text" class="form-control remark-input" placeholder="Entry time or notes" value="Unexcused Absence">
+                </td>
+            </tr>
+            <tr data-floor="Floor 3">
+                <td><strong>STU-2026-04</strong></td>
+                <td>Ananya Iyer</td>
+                <td>Room 305 - Bed A</td>
+                <td>
+                    <span style="font-weight: 600; color: #2A9D8F;">98%</span>
+                </td>
+                <td>
+                    <div class="attendance-btn-group" data-student-id="STU-2026-04">
+                        <button type="button" class="att-btn" onclick="setStatus(this, 'Present')">Present</button>
+                        <button type="button" class="att-btn" onclick="setStatus(this, 'Absent')">Absent</button>
+                        <button type="button" class="att-btn" onclick="setStatus(this, 'Late')">Late</button>
+                        <button type="button" class="att-btn active-leave" onclick="setStatus(this, 'Leave')">Leave</button>
+                    </div>
+                </td>
+                <td>
+                    <input type="text" class="form-control remark-input" placeholder="Entry time or notes" value="Home visit pass #312">
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<style>
+    .attendance-btn-group {
+        display: inline-flex;
+        border-radius: 4px;
+        overflow: hidden;
+        border: 1px solid #ddd;
+    }
+    .att-btn {
+        background: #fff;
+        border: none;
+        border-right: 1px solid #eee;
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: var(--transition);
+        color: #555;
+    }
+    .att-btn:last-child {
+        border-right: none;
+    }
+    .att-btn:hover {
+        background: #f5f5f5;
+    }
+    .att-btn.active-present {
+        background: #2A9D8F;
+        color: #fff;
+    }
+    .att-btn.active-absent {
+        background: #E63946;
+        color: #fff;
+    }
+    .att-btn.active-late {
+        background: #F4A261;
+        color: #fff;
+    }
+    .att-btn.active-leave {
+        background: #1C2541;
+        color: #fff;
+    }
+    .remark-input {
+        padding: 4px 8px;
+        font-size: 0.85rem;
+    }
+</style>
+
+<script>
+    function setStatus(button, status) {
+        const group = button.closest('.attendance-btn-group');
+        const buttons = group.querySelectorAll('.att-btn');
+        
+        buttons.forEach(btn => {
+            btn.classList.remove('active-present', 'active-absent', 'active-late', 'active-leave');
+        });
+
+        const statusClass = 'active-' + status.toLowerCase();
+        button.classList.add(statusClass);
+        updateCounters();
+    }
+
+    function bulkMark(status) {
+        const statusClass = 'active-' + status.toLowerCase();
+        const rows = document.querySelectorAll('#attendanceTableBody tr');
+
+        rows.forEach(row => {
+            if (row.style.display !== 'none') {
+                const buttons = row.querySelectorAll('.att-btn');
+                buttons.forEach(btn => {
+                    btn.classList.remove('active-present', 'active-absent', 'active-late', 'active-leave');
+                    if (btn.innerText.trim().toLowerCase() === status.toLowerCase()) {
+                        btn.classList.add(statusClass);
+                    }
+                });
+            }
+        });
+        updateCounters();
+    }
+
+    function updateCounters() {
+        const presentCount = document.querySelectorAll('.att-btn.active-present').length;
+        const absentCount = document.querySelectorAll('.att-btn.active-absent').length;
+        const leaveCount = document.querySelectorAll('.att-btn.active-leave').length;
+
+        document.getElementById('statPresentCount').innerText = presentCount;
+        document.getElementById('statAbsentCount').innerText = absentCount;
+        document.getElementById('statLeaveCount').innerText = leaveCount;
+    }
+
+    function filterRecords() {
+        const floor = document.getElementById('floorFilter').value;
+        const status = document.getElementById('statusFilter').value.toLowerCase();
+        const search = document.getElementById('searchInput').value.toLowerCase();
+        const rows = document.querySelectorAll('#attendanceTableBody tr');
+
+        rows.forEach(row => {
+            const rowFloor = row.getAttribute('data-floor') || '';
+            const textContent = row.innerText.toLowerCase();
+            const activeBtn = row.querySelector('.att-btn[class*="active-"]');
+            const currentStatus = activeBtn ? activeBtn.innerText.trim().toLowerCase() : '';
+
+            const matchesFloor = !floor || rowFloor === floor;
+            const matchesStatus = !status || currentStatus === status;
+            const matchesSearch = !search || textContent.includes(search);
+
+            if (matchesFloor && matchesStatus && matchesSearch) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    document.getElementById('searchInput').addEventListener('keyup', filterRecords);
+
+    function submitAttendanceBatch() {
+        const records = [];
+        const date = document.getElementById('attendanceDate').value;
+        const rows = document.querySelectorAll('#attendanceTableBody tr');
+
+        rows.forEach(row => {
+            const group = row.querySelector('.attendance-btn-group');
+            const studentId = group.getAttribute('data-student-id');
+            const activeBtn = group.querySelector('.att-btn[class*="active-"]');
+            const status = activeBtn ? activeBtn.innerText.trim() : 'Present';
+            const remark = row.querySelector('.remark-input').value;
+
+            records.push({ studentId, status, remark, date });
+        });
+
+        alert(`Successfully saved attendance records for ${records.length} students on ${date}.`);
+    }
+
+    function exportAttendanceCSV() {
+        const date = document.getElementById('attendanceDate').value;
+        let csv = 'Student ID,Student Name,Room & Bed,Status,Remarks,Date\n';
+        const rows = document.querySelectorAll('#attendanceTableBody tr');
+
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            const studentId = cells[0].innerText.trim();
+            const name = cells[1].innerText.trim();
+            const room = cells[2].innerText.trim();
+            const activeBtn = row.querySelector('.att-btn[class*="active-"]');
+            const status = activeBtn ? activeBtn.innerText.trim() : 'N/A';
+            const remark = row.querySelector('.remark-input').value.trim();
+
+            csv += `"${studentId}","${name}","${room}","${status}","${remark}","${date}"\n`;
+        });
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('href', url);
+        a.setAttribute('download', `Attendance_${date}.csv`);
+        a.click();
+    }
+</script>
+{% endblock %}
