@@ -41,10 +41,18 @@ class Room(db.Model):
 
 class Payment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
+    receipt_no = db.Column(db.String(50), unique=True, nullable=False)
     student_id = db.Column(db.Integer, db.ForeignKey('student.id'), nullable=False)
     amount = db.Column(db.Float, nullable=False)
+    fee_type = db.Column(db.String(100), default='Monthly Rent & Mess')
+    payment_method = db.Column(db.String(50), default='UPI / Online')
     payment_date = db.Column(db.DateTime, default=datetime.utcnow)
     status = db.Column(db.String(20), default='Paid')
+    
+    # Razorpay Transaction Tracking
+    razorpay_order_id = db.Column(db.String(100), nullable=True)
+    razorpay_payment_id = db.Column(db.String(100), nullable=True)
+    razorpay_signature = db.Column(db.String(255), nullable=True)
 
 class Notice(db.Model):
     id = db.Column(db.Integer, primary_key=True)

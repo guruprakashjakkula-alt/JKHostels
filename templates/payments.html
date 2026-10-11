@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 
 {% block content %}
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
 <div class="page-header">
     <div>
         <h1>Fees & Payment Management</h1>
@@ -125,36 +127,6 @@
                     </button>
                 </td>
             </tr>
-            <tr data-method="Bank Transfer" data-status="Partially Paid">
-                <td><strong>#REC-8043</strong></td>
-                <td>Rohan Verma <small style="display: block; color: #888;">STU-2026-03</small></td>
-                <td>Room 102</td>
-                <td>Monthly Rent</td>
-                <td><strong>₹4,000</strong></td>
-                <td><span style="font-weight: 600; color: #1C2541;"><i class="fas fa-building-columns"></i> Bank Transfer</span></td>
-                <td>2026-10-05</td>
-                <td><span class="badge badge-primary">Partially Paid</span></td>
-                <td style="text-align: right;">
-                    <button class="btn-icon text-primary" title="Print Receipt" onclick="generateReceipt('REC-8043', 'Rohan Verma', 'STU-2026-03', 'Room 102', '4000', 'Bank Transfer', '2026-10-05', 'Partially Paid', 'Partial rent payment, balance: ₹2,500')">
-                        <i class="fas fa-print"></i>
-                    </button>
-                </td>
-            </tr>
-            <tr data-method="UPI" data-status="Pending">
-                <td><strong>#INV-8044</strong></td>
-                <td>Ananya Iyer <small style="display: block; color: #888;">STU-2026-04</small></td>
-                <td>Room 305</td>
-                <td>Electricity & Utility</td>
-                <td><strong>₹1,200</strong></td>
-                <td><span style="font-weight: 600; color: #888;">Unpaid</span></td>
-                <td>2026-10-08</td>
-                <td><span class="badge" style="background: rgba(230,57,70,0.15); color: #E63946;">Pending</span></td>
-                <td style="text-align: right;">
-                    <button class="btn-icon text-primary" title="Print Invoice" onclick="generateReceipt('INV-8044', 'Ananya Iyer', 'STU-2026-04', 'Room 305', '1200', 'Pending', '2026-10-08', 'Pending', 'Electricity Bill Due')">
-                        <i class="fas fa-file-invoice-dollar"></i>
-                    </button>
-                </td>
-            </tr>
         </tbody>
     </table>
 </div>
@@ -176,12 +148,11 @@
                         <option value="STU-2026-01" data-name="Aarav Sharma" data-room="Room 101" data-rent="6500">Aarav Sharma (Room 101)</option>
                         <option value="STU-2026-02" data-name="Priya Patel" data-room="Room 204" data-rent="7500">Priya Patel (Room 204)</option>
                         <option value="STU-2026-03" data-name="Rohan Verma" data-room="Room 102" data-rent="5500">Rohan Verma (Room 102)</option>
-                        <option value="STU-2026-04" data-name="Ananya Iyer" data-room="Room 305" data-rent="9000">Ananya Iyer (Room 305)</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Payment Date *</label>
-                    <input type="date" id="modalPaymentDate" required class="form-control" value="2026-10-09">
+                    <input type="date" id="modalPaymentDate" required class="form-control" value="2026-10-11">
                 </div>
 
                 <div class="form-group">
@@ -200,45 +171,52 @@
                     <label>Water & Utility (₹)</label>
                     <input type="number" id="feeWater" class="form-control fee-calc" value="0" min="0" oninput="calculateTotal()">
                 </div>
-                <div class="form-group">
-                    <label>Late Fine / Penalties (₹)</label>
-                    <input type="number" id="feeLate" class="form-control fee-calc" value="0" min="0" oninput="calculateTotal()">
-                </div>
-                <div class="form-group">
-                    <label>Concession / Discount (₹)</label>
-                    <input type="number" id="feeDiscount" class="form-control fee-calc" value="0" min="0" oninput="calculateTotal()">
-                </div>
 
-                <div class="form-group">
-                    <label>Payment Method *</label>
-                    <select id="modalPaymentMethod" class="form-control" required>
-                        <option value="UPI">UPI</option>
-                        <option value="Cash">Cash</option>
-                        <option value="Bank Transfer">Bank Transfer</option>
-                        <option value="Card">Card</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Payment Status *</label>
-                    <select id="modalPaymentStatus" class="form-control" required>
-                        <option value="Paid">Fully Paid</option>
-                        <option value="Partially Paid">Partially Paid</option>
-                        <option value="Pending">Pending</option>
-                    </select>
-                </div>
                 <div class="form-group full-width" style="background: #f8f9fa; border: 1px solid #ddd; padding: 1rem; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
                     <span style="font-weight: 600; color: #1C2541; font-size: 1.1rem;">Total Payable Amount:</span>
                     <span style="font-weight: 700; color: #2A9D8F; font-size: 1.4rem;" id="totalDisplay">₹3,000</span>
                 </div>
-                <div class="form-group full-width">
-                    <label>Notes / Transaction Reference</label>
-                    <input type="text" id="modalReference" class="form-control" placeholder="UPI Ref ID, Cheque number, or comments">
-                </div>
             </div>
 
-            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem;">
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 1.5rem; border-top: 1px solid #eee; padding-top: 1rem; flex-wrap: wrap;">
                 <button type="button" class="btn btn-secondary" onclick="closePaymentModal()">Cancel</button>
-                <button type="submit" class="btn btn-primary">Save & Issue Receipt</button>
+                <button type="button" class="btn btn-secondary" onclick="openDirectQrModal()">
+                    <i class="fas fa-qrcode"></i> Scan Bank QR
+                </button>
+                <button type="button" class="btn btn-primary" onclick="initiateOnlinePayment()">
+                    <i class="fas fa-bolt"></i> Pay via Razorpay
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Direct UPI QR Scan -->
+<div id="directQrModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 1060; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+    <div style="background: #ffffff; border-radius: 8px; width: 100%; max-width: 440px; padding: 2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center;">
+        <h2 style="color: #0B132B; margin-bottom: 0.5rem; font-size: 1.3rem;">
+            <i class="fas fa-qrcode" style="color: #F4A261;"></i> Scan & Pay Directly
+        </h2>
+        <p style="color: #666; font-size: 0.85rem; margin-bottom: 1.2rem;">
+            Scan using Google Pay, PhonePe, Paytm, or BHIM
+        </p>
+
+        <div style="background: #f8f9fa; border: 2px dashed #ddd; border-radius: 8px; padding: 1rem; display: inline-block; margin-bottom: 1rem;">
+            <img src="{{ url_for('static', filename='images/hostel_bank_qr.png') }}" alt="Hostel Bank UPI QR" style="width: 200px; height: 200px; object-fit: contain; display: block;" onerror="this.onerror=null; this.src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=upi://pay?pa=hosteladmin@upi&pn=LuxeHostel';">
+        </div>
+
+        <p style="font-weight: 600; color: #1C2541; margin-bottom: 1rem; font-size: 0.95rem;">
+            UPI ID: <span style="color: #2A9D8F;">hosteladmin@upi</span>
+        </p>
+
+        <form id="directUpiForm" onsubmit="handleDirectUpiSubmit(event)" style="text-align: left;">
+            <div class="form-group" style="margin-bottom: 1rem;">
+                <label style="font-size: 0.85rem;">Bank UTR / UPI Reference No *</label>
+                <input type="text" id="upiRefNo" required class="form-control" placeholder="12-digit UPI Ref / UTR No" pattern="\d{12}">
+            </div>
+            <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn btn-secondary" onclick="closeDirectQrModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Confirm & Save</button>
             </div>
         </form>
     </div>
@@ -285,17 +263,6 @@
                 </tr>
             </tbody>
         </table>
-
-        <div style="display: flex; justify-content: space-between; margin-top: 3.5rem; padding-top: 1rem;">
-            <div style="text-align: center; width: 200px;">
-                <hr style="border: 0; border-top: 1px solid #444; margin-bottom: 5px;">
-                <span style="font-size: 0.85rem;">Student Signature</span>
-            </div>
-            <div style="text-align: center; width: 200px;">
-                <hr style="border: 0; border-top: 1px solid #444; margin-bottom: 5px;">
-                <span style="font-size: 0.85rem;">Authorized Cashier / Warden</span>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -310,6 +277,20 @@
         calculateTotal();
     }
 
+    function openDirectQrModal() {
+        const studentSelect = document.getElementById('modalStudentSelect');
+        if (!studentSelect.value) {
+            alert("Please select a student first!");
+            return;
+        }
+        document.getElementById('directQrModal').style.display = 'flex';
+    }
+
+    function closeDirectQrModal() {
+        document.getElementById('directQrModal').style.display = 'none';
+        document.getElementById('directUpiForm').reset();
+    }
+
     function handleStudentSelect(select) {
         const option = select.options[select.selectedIndex];
         const rent = option.getAttribute('data-rent') || 0;
@@ -322,41 +303,37 @@
         const mess = parseFloat(document.getElementById('feeMess').value) || 0;
         const elec = parseFloat(document.getElementById('feeElectricity').value) || 0;
         const water = parseFloat(document.getElementById('feeWater').value) || 0;
-        const late = parseFloat(document.getElementById('feeLate').value) || 0;
-        const discount = parseFloat(document.getElementById('feeDiscount').value) || 0;
 
-        const total = Math.max(0, (rent + mess + elec + water + late) - discount);
+        const total = Math.max(0, rent + mess + elec + water);
         document.getElementById('totalDisplay').innerText = '₹' + total.toLocaleString('en-IN');
         return total;
     }
 
-    function handlePaymentSubmit(e) {
+    function handleDirectUpiSubmit(e) {
         e.preventDefault();
+        const utr = document.getElementById('upiRefNo').value;
         const studentSelect = document.getElementById('modalStudentSelect');
         const selectedOption = studentSelect.options[studentSelect.selectedIndex];
-        
-        const stuId = selectedOption.value;
-        const name = selectedOption.getAttribute('data-name');
+
+        const studentName = selectedOption.getAttribute('data-name');
+        const studentId = selectedOption.value;
         const room = selectedOption.getAttribute('data-room');
         const amount = calculateTotal();
-        const method = document.getElementById('modalPaymentMethod').value;
-        const status = document.getElementById('modalPaymentStatus').value;
-        const date = document.getElementById('modalPaymentDate').value;
         const receiptNo = 'REC-' + Math.floor(1000 + Math.random() * 9000);
-        const badgeClass = status === 'Paid' ? 'badge-success' : (status === 'Pending' ? 'badge-danger' : 'badge-primary');
+        const date = document.getElementById('modalPaymentDate').value;
 
         const newRow = `
-            <tr data-method="${method}" data-status="${status}">
+            <tr data-method="UPI" data-status="Paid">
                 <td><strong>#${receiptNo}</strong></td>
-                <td>${name} <small style="display: block; color: #888;">${stuId}</small></td>
+                <td>${studentName} <small style="display: block; color: #888;">${studentId}</small></td>
                 <td>${room}</td>
-                <td>Hostel Maintenance & Rent</td>
+                <td>Hostel Rent (Bank QR)</td>
                 <td><strong>₹${amount.toLocaleString('en-IN')}</strong></td>
-                <td><span style="font-weight: 600; color: #1C2541;">${method}</span></td>
+                <td><span style="font-weight: 600; color: #2A9D8F;"><i class="fas fa-qrcode"></i> UPI (${utr})</span></td>
                 <td>${date}</td>
-                <td><span class="badge ${badgeClass}">${status}</span></td>
+                <td><span class="badge badge-success">Paid</span></td>
                 <td style="text-align: right;">
-                    <button class="btn-icon text-primary" title="Print Receipt" onclick="generateReceipt('${receiptNo}', '${name}', '${stuId}', '${room}', '${amount}', '${method}', '${date}', '${status}', 'Hostel Accommodations & Facilities')">
+                    <button class="btn-icon text-primary" title="Print Receipt" onclick="generateReceipt('${receiptNo}', '${studentName}', '${studentId}', '${room}', '${amount}', 'UPI (${utr})', '${date}', 'Paid', 'Direct Bank QR Payment')">
                         <i class="fas fa-print"></i>
                     </button>
                 </td>
@@ -364,7 +341,82 @@
         `;
 
         document.getElementById('paymentsTableBody').insertAdjacentHTML('afterbegin', newRow);
+        closeDirectQrModal();
         closePaymentModal();
+        alert("Payment recorded with UTR: " + utr);
+    }
+
+    async function initiateOnlinePayment() {
+        const studentSelect = document.getElementById('modalStudentSelect');
+        if (!studentSelect.value) {
+            alert("Please select a student first.");
+            return;
+        }
+
+        const selectedOption = studentSelect.options[studentSelect.selectedIndex];
+        const studentId = selectedOption.value;
+        const studentName = selectedOption.getAttribute('data-name');
+        const totalAmount = calculateTotal();
+
+        if (totalAmount <= 0) {
+            alert("Amount must be greater than ₹0.");
+            return;
+        }
+
+        try {
+            const orderResponse = await fetch('/api/payment/create-order', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: totalAmount, student_id: studentId })
+            });
+
+            const orderData = await orderResponse.json();
+            if (!orderData.success) {
+                alert("Error creating order: " + orderData.message);
+                return;
+            }
+
+            const options = {
+                key: orderData.key_id,
+                amount: orderData.amount * 100,
+                currency: "INR",
+                name: "Luxe Hostel Residency",
+                description: "Hostel Rent & Mess Fees",
+                order_id: orderData.order_id,
+                handler: async function (response) {
+                    const verifyResponse = await fetch('/api/payment/verify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                            student_id: studentId,
+                            amount: totalAmount,
+                            receipt_no: orderData.receipt_no,
+                            fee_type: "Monthly Rent & Mess"
+                        })
+                    });
+
+                    const verifyData = await verifyResponse.json();
+                    if (verifyData.success) {
+                        alert("Payment Successful! Receipt: " + orderData.receipt_no);
+                        closePaymentModal();
+                        location.reload();
+                    } else {
+                        alert("Verification Failed: " + verifyData.message);
+                    }
+                },
+                prefill: { name: studentName, email: "resident@hostel.com", contact: "9876543210" },
+                theme: { color: "#F4A261" }
+            };
+
+            const rzp = new Razorpay(options);
+            rzp.open();
+        } catch (error) {
+            console.error("Payment error:", error);
+            alert("Failed to connect to payment gateway.");
+        }
     }
 
     function filterPayments() {
@@ -411,22 +463,14 @@
     }
 
     function exportPaymentsCSV() {
-        let csv = 'Receipt No,Student Name,Student ID,Room,Amount,Payment Method,Date,Status\n';
+        let csv = 'Receipt No,Student Name,Room,Amount,Payment Method,Date,Status\n';
         const rows = document.querySelectorAll('#paymentsTableBody tr');
 
         rows.forEach(row => {
             const cols = row.querySelectorAll('td');
-            const rec = cols[0].innerText.trim();
-            const stuInfo = cols[1].innerText.trim().split('\n');
-            const name = stuInfo[0];
-            const stuId = stuInfo[1] || '';
-            const room = cols[2].innerText.trim();
-            const amount = cols[4].innerText.trim();
-            const method = cols[5].innerText.trim();
-            const date = cols[6].innerText.trim();
-            const status = cols[7].innerText.trim();
-
-            csv += `"${rec}","${name}","${stuId}","${room}","${amount}","${method}","${date}","${status}"\n`;
+            if (cols.length >= 8) {
+                csv += `"${cols[0].innerText.trim()}","${cols[1].innerText.replace(/\n/g, ' ').trim()}","${cols[2].innerText.trim()}","${cols[4].innerText.trim()}","${cols[5].innerText.trim()}","${cols[6].innerText.trim()}","${cols[7].innerText.trim()}"\n`;
+            }
         });
 
         const blob = new Blob([csv], { type: 'text/csv' });

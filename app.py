@@ -21,29 +21,7 @@ with app.app_context():
         admin.set_password('Admin@123')
         db.session.add(admin)
         db.session.commit()
-        @app.route('/signup', methods=['GET', 'POST'])
-def signup():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        
-        # user already unnada check
-        existing = User.query.filter_by(username=username).first()
-        if existing:
-            flash('Username already exists!')
-            return redirect(url_for('signup'))
-        
-        new_user = User(username=username)
-        new_user.set_password(password)  # password hash avuthundi
-        db.session.add(new_user)
-        db.session.commit()
-        
-        flash('Account created! Please login')
-        return redirect(url_for('login'))
-        
-    return render_template('signup.html')
-
-# --- AUTH ROUTES ---
+        # --- AUTH ROUTES ---
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
@@ -194,3 +172,99 @@ def internal_error(e):
 
 if __name__ == '__main__':
     app.run(debug=True, host='127.0.0.1', port=5000)
+import razorpay
+from datetime import datetime
+import random
+
+# Initialize Razorpay Client
+razorpay_client = razorpay.Client(auth=(app.config['RAZORPAY_KEY_ID'], app.config['RAZORPAY_KEY_SECRET']))
+
+@app.route('/api/payment/create-order', methods=['POST'])
+@login_required
+def create_payment_order():
+    """Step 1: Create Razorpay Order"""
+    try:
+        data = request.get_json()
+        amount_in_rupees = float(data.get('amount', 0))
+        student_id = data.get('student_id')
+
+        if amount_in_rupees <= 0:
+            return jsonify({'success': False, 'message': 'Invalid payment amount'}), 400
+
+        # Razorpay expects amount in paise (1 INR = 100 Paise)
+        amount_in_paise = int(amount_in_rupees * 100)
+        receipt = f"REC_{random.randint(10000, 99999)}"
+
+        order_data = {
+            'amount': amount_in_paise,
+            'currency': 'INR',
+            'receipt': receipt,
+            'payment_capture': '1' # Auto-capture
+        }
+        
+        razorpay_order = razorpay_client.order.create(data=order_data)
+
+        return jsonify({
+            'success': True,
+            'order_id': razorpay_order['id'],
+            'amount': amount_in_rupees,
+            'currency': 'INR',
+            'key_id': app.config['RAZORPAY_KEY_ID'],
+            'receipt_no': receipt
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/payment/verify', methods=['POST'])
+@login_required
+def verify_payment():
+    """Step 2: Cryptographic Signature Verification & DB Commit"""
+    try:
+        payload = request.get_json()
+        razorpay_order_id = payload.get('razorpay_order_id')
+        razorpay_payment_id = payload.get('razorpay_payment_id')
+        razorpay_signature = payload.get('razorpay_signature')
+        
+        student_code = payload.get('student_id')
+        amount = float(payload.get('amount'))
+        fee_type = payload.get('fee_type', 'Hostel Fees')
+        receipt_no = payload.get('receipt_no')
+
+        # Verify signature with Razorpay utility
+        verification_params = {
+            'razorpay_order_id': razorpay_order_id,
+            'razorpay_payment_id': razorpay_payment_id,
+            'razorpay_signature': razorpay_signature
+        }
+
+        # This raises SignatureVerificationError if signature is fake/tampered
+        razorpay_client.utility.verify_payment_signature(verification_params)
+
+        # Lookup student
+        student = Student.query.filter_by(student_id=student_code).first()
+        student_db_id = student.id if student else 1
+
+        # Save verified payment to SQLite DB
+        new_payment = Payment(
+            receipt_no=receipt_no,
+            student_id=student_db_id,
+            amount=amount,
+            fee_type=fee_type,
+            payment_method='UPI / Online',
+            status='Paid',
+            razorpay_order_id=razorpay_order_id,
+            razorpay_payment_id=razorpay_payment_id,
+            razorpay_signature=razorpay_signature,
+            payment_date=datetime.utcnow()
+        )
+        db.session.add(new_payment)
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': 'Payment verified and recorded successfully!'})
+
+    except razorpay.errors.SignatureVerificationError:
+        return jsonify({'success': False, 'message': 'Payment verification failed: Invalid Signature'}), 400
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
